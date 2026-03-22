@@ -14,10 +14,15 @@ def tool_agent(state):
     prompt = f"""You are a tool selector. Return ONLY raw JSON, no markdown, no code fences.
 
 Available tools:
-- web_search  (input key: "query")   → use for weather, news, live info, web searches
-- calculator  (input key: "expression") → use for math calculations
+- web_search   → live web search (weather, news, facts)
+- calculator   → math expressions (e.g. "2 + 2 * 10")
+- list_files   → list files in the project (input: subdirectory path or empty string)
+- read_file    → read a project file (input: relative file path)
+- write_file   → write content to a project file (input: relative file path, needs "content" field)
+- run_command  → run safe terminal command (dir, ls, pwd, echo, pip list, etc.)
 
-Return format: {{"tool": "tool_name", "input": "value"}}
+Return format: {{"tool": "tool_name", "input": "primary input value"}}
+For write_file also include: {{"tool": "write_file", "input": "filename", "content": "file content"}}
 
 Query: {query}"""
 
@@ -27,7 +32,6 @@ Query: {query}"""
     if isinstance(content, list):
         content = "".join([item.get("text", "") for item in content if isinstance(item, dict)])
 
-    # Strip markdown code fences if present
     content = re.sub(r"```(?:json)?\s*", "", content).strip()
 
     try:
@@ -36,9 +40,10 @@ Query: {query}"""
         return {"messages": [("assistant", f"Tool parsing failed. Raw LLM output: {content}")]}
 
     tool = tool_data.get("tool")
-    tool_input = tool_data.get("input")
+    tool_input = tool_data.get("input", "")
+    extra = {k: v for k, v in tool_data.items() if k not in ("tool", "input")}
 
     loop = asyncio.get_event_loop()
-    output = loop.run_until_complete(call_mcp_tool(tool, tool_input))
+    output = loop.run_until_complete(call_mcp_tool(tool, tool_input, extra))
 
     return {"messages": [("assistant", f"**{tool}** result:\n\n{output}")]}

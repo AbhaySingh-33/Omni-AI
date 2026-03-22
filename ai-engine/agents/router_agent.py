@@ -1,16 +1,35 @@
 from app.gemini import llm
 import re
 
+# Keywords that always need live web search regardless of LLM routing
+LIVE_DATA_KEYWORDS = [
+    "ipl", "cricket", "match", "score", "live", "today", "tonight", "current",
+    "weather", "news", "latest", "2024", "2025", "2026", "2027",
+    "who won", "who is", "price", "stock", "election", "result", "schedule",
+    "fixture", "standings", "ranking", "trending"
+]
+
 def router_agent(state):
     messages = state["messages"]
+    query = messages[-1].content.lower()
+
+    # Fast-path: if query contains live data keywords → always tools
+    if any(kw in query for kw in LIVE_DATA_KEYWORDS):
+        return {"next": "tools"}
 
     prompt = f"""You are a router. Classify the user query into exactly one category.
 
 Categories:
-- memory     → asking about past conversations or what was said before
-- reasoning  → math, logic, coding, general knowledge questions
-- research   → questions about documents or data the user has uploaded
-- tools      → anything requiring live/real-time data (weather, news, search, calculations)
+- memory    → asking about past conversations or what was said before
+- reasoning → general knowledge, explanations, coding help, opinions
+- research  → questions about documents or data the user has uploaded
+- tools     → anything that requires taking an action or fetching live data:
+              * create/read/write/list files
+              * run terminal/shell commands
+              * web search, weather, news
+              * math calculations
+
+IMPORTANT: If the user wants to DO something (create, write, run, search, calculate) → tools
 
 Respond with ONLY one word: memory / reasoning / research / tools
 
