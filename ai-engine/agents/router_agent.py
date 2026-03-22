@@ -9,6 +9,14 @@ LIVE_DATA_KEYWORDS = [
     "fixture", "standings", "ranking", "trending"
 ]
 
+# Keywords that always route to research (RAG) agent
+RESEARCH_KEYWORDS = [
+    "document", "pdf", "file", "uploaded", "according to", "based on",
+    "in the document", "from the file", "what does it say", "summarize the",
+    "extract", "find in", "in the story", "in the book", "who said",
+    "what happened", "chapter", "plot", "novel", "character", "passage"
+]
+
 def router_agent(state):
     messages = state["messages"]
     query = messages[-1].content.lower()
@@ -20,6 +28,10 @@ def router_agent(state):
     # Fast-path: if query contains live data keywords → always tools
     if any(kw in query for kw in LIVE_DATA_KEYWORDS):
         return {"next": "tools"}
+
+    # Fast-path: document/PDF/story questions → always research
+    if any(kw in query for kw in RESEARCH_KEYWORDS):
+        return {"next": "research"}
 
     # Sanitize user input before injecting into LLM prompt
     safe_content = messages[-1].content.replace("{", "{{").replace("}", "}}")

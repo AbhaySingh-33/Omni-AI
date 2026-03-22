@@ -1,7 +1,7 @@
 from app.pinecone_client import index
 from app.embeddings import embeddings
 
-MIN_SCORE = 0.75  # discard chunks below this similarity threshold
+MIN_SCORE = 0.60  # discard chunks below this similarity threshold
 
 def retrieve_context(query):
     query_vector = embeddings.embed_query(query)
