@@ -1,0 +1,52 @@
+from langgraph.graph import StateGraph, START, END
+from typing import TypedDict, Annotated
+from langgraph.graph.message import add_messages
+
+from agents.reasoning_agent import reasoning_agent
+from agents.router_agent import router_agent
+from agents.research_agent import research_agent
+from agents.tool_agent import tool_agent
+from agents.memory_agent import memory_agent
+
+
+class State(TypedDict):
+    messages: Annotated[list, add_messages]
+    next: str
+
+
+def route_decision(state):
+    return state["next"]
+
+
+def build_graph():
+    graph = StateGraph(State)
+
+    # Nodes
+    graph.add_node("router", router_agent)
+    graph.add_node("reasoning", reasoning_agent)
+    graph.add_node("research", research_agent)
+    graph.add_node("tools", tool_agent)
+    graph.add_node("memory", memory_agent)
+
+    # Start
+    graph.add_edge(START, "router")
+
+    # Routing logic
+    graph.add_conditional_edges(
+        "router",
+        route_decision,
+        {
+            "reasoning": "reasoning",
+            "research": "research",
+            "tools": "tools",
+            "memory": "memory",
+        }
+    )
+
+    # End
+    graph.add_edge("reasoning", END)
+    graph.add_edge("research", END)
+    graph.add_edge("tools", END)
+    graph.add_edge("memory", END)
+
+    return graph.compile()

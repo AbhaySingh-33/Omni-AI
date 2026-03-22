@@ -1,0 +1,10 @@
+langchain-google-genai
+python-dotenv
+pinecone
+pypdf
+fastapi
+uvicorn
+langgraph
+langchain
+psycopg2-binary
+
