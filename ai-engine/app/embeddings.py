@@ -1,10 +1,10 @@
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_mistralai import MistralAIEmbeddings
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-embeddings = GoogleGenerativeAIEmbeddings(
-    model="models/gemini-embedding-001",
-    google_api_key=os.getenv("GEMINI_API_KEY")
+embeddings = MistralAIEmbeddings(
+    model="mistral-embed",
+    api_key=os.getenv("MISTRAL_API_KEY")
 )

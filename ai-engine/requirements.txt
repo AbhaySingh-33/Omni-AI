@@ -1,4 +1,4 @@
-langchain-google-genai
+langchain-mistralai
 python-dotenv
 pinecone
 pypdf
@@ -7,4 +7,6 @@ uvicorn
 langgraph
 langchain
 psycopg2-binary
-
+mcp
+nest_asyncio
+ddgs
