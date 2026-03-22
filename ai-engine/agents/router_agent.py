@@ -13,9 +13,16 @@ def router_agent(state):
     messages = state["messages"]
     query = messages[-1].content.lower()
 
+    # Fast-path: confirmation replies → always tools
+    if query.strip() in ("allow", "deny"):
+        return {"next": "tools"}
+
     # Fast-path: if query contains live data keywords → always tools
     if any(kw in query for kw in LIVE_DATA_KEYWORDS):
         return {"next": "tools"}
+
+    # Sanitize user input before injecting into LLM prompt
+    safe_content = messages[-1].content.replace("{", "{{").replace("}", "}}")
 
     prompt = f"""You are a router. Classify the user query into exactly one category.
 
@@ -33,7 +40,7 @@ IMPORTANT: If the user wants to DO something (create, write, run, search, calcul
 
 Respond with ONLY one word: memory / reasoning / research / tools
 
-Query: {messages[-1].content}"""
+Query: {safe_content}"""
 
     result = llm.invoke(prompt)
     content = result.content

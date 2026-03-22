@@ -5,6 +5,8 @@ from graph.workflow import build_graph
 from services.memory import save_chat
 from app.gemini import llm
 from datetime import datetime
+from app.guardrails.input_guard import validate_input
+from app.guardrails.output_guard import validate_output
 
 app = FastAPI()
 
@@ -60,15 +62,24 @@ def root():
 async def chat(req: ChatRequest):
     user_id = "default_user"
 
+    # 🛡️ INPUT GUARD
+    is_valid, checked_input = validate_input(req.message)
+    if not is_valid:
+        return {"response": checked_input}
+
     result = graph.invoke({
-        "messages": [("user", req.message)]
+        "messages": [("user", checked_input)]
     })
 
     raw_response = result["messages"][-1].content
     final_response = format_response(req.message, raw_response)
 
-    save_chat(user_id, req.message, final_response)
+    # 🛡️ OUTPUT GUARD
+    safe_response = validate_output(final_response)
+
+    # 💾 SAVE MEMORY
+    save_chat(user_id, checked_input, safe_response)
 
     return {
-        "response": final_response
+        "response": safe_response
     }
