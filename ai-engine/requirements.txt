@@ -1,5 +1,6 @@
 langchain-mistralai
 python-dotenv
+python-dateutil
 pinecone
 pypdf
 fastapi
@@ -10,3 +11,4 @@ psycopg2-binary
 mcp
 nest_asyncio
 ddgs
+dspy

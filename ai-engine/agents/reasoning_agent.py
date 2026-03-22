@@ -1,14 +1,13 @@
-from app.gemini import llm
+from app.dspy_module import QAModule
+
+qa = QAModule()
 
 def reasoning_agent(state):
     messages = state["messages"]
+    query = messages[-1].content
 
-    result = llm.invoke(messages)
-    content = result.content
-
-    if isinstance(content, list):
-        content = "".join([item.get("text", "") for item in content if isinstance(item, dict)])
+    result = qa(question=query)
 
     return {
-        "messages": [("assistant", content)]
+        "messages": [("assistant", result.answer)]
     }
