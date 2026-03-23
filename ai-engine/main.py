@@ -94,8 +94,9 @@ async def chat(req: ChatRequest, user=Depends(get_current_user)):
     final_response = format_response(req.message, raw_response)
     safe_response = validate_output(final_response)
 
+    agent_used = result.get("agent_used") or result.get("next", "reasoning")
     save_chat(user_id, checked_input, safe_response)
-    return {"response": safe_response}
+    return {"response": safe_response, "agent": agent_used}
 
 
 @app.get("/history")

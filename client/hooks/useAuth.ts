@@ -1,18 +1,20 @@
 "use client";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { AuthUser } from "@/lib/types";
 
 const AI_ENGINE_URL = process.env.NEXT_PUBLIC_AI_ENGINE_URL || "http://localhost:8000";
 const TOKEN_KEY = "omni_token";
 
 export function useAuth() {
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    if (typeof window === "undefined") return null;
-    const raw = localStorage.getItem(TOKEN_KEY);
-    return raw ? JSON.parse(raw) : null;
-  });
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Read localStorage only on client after mount
+  useEffect(() => {
+    const raw = localStorage.getItem(TOKEN_KEY);
+    if (raw) setUser(JSON.parse(raw));
+  }, []);
 
   const _request = async (path: string, email: string, password: string) => {
     setLoading(true);

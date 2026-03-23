@@ -27,4 +27,4 @@ Answer based on what you know about this user from the memory above:"""
     if isinstance(content, list):
         content = "".join([item.get("text", "") for item in content if isinstance(item, dict)])
 
-    return {"messages": [("assistant", content)]}
+    return {"messages": [("assistant", content)], "agent_used": "memory"}

@@ -2,6 +2,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Message } from "@/lib/types";
 
+function Timestamp({ date }: { date: Date }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  return (
+    <p className="text-white/20 text-xs">
+      {mounted ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
+    </p>
+  );
+}
+
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   const copy = () => {
@@ -52,9 +62,7 @@ function UserMessage({ message }: { message: Message }) {
         </div>
         <div className="flex justify-end items-center gap-1 mt-1">
           <CopyButton text={message.content} />
-          <p className="text-white/20 text-xs">
-            {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-          </p>
+          <Timestamp date={message.timestamp} />
         </div>
       </div>
     </div>
@@ -62,20 +70,35 @@ function UserMessage({ message }: { message: Message }) {
 }
 
 function AssistantMessage({ message }: { message: Message }) {
+  const agentMeta: Record<string, { label: string; icon: string; color: string }> = {
+    reasoning: { label: "Reasoning", icon: "🧠", color: "text-blue-400 bg-blue-500/10 border-blue-500/20" },
+    research:  { label: "Research",  icon: "🔍", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" },
+    tools:     { label: "Tools",     icon: "🛠️", color: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
+    memory:    { label: "Memory",    icon: "💾", color: "text-rose-400 bg-rose-500/10 border-rose-500/20" },
+    router:    { label: "Router",    icon: "⚡", color: "text-violet-400 bg-violet-500/10 border-violet-500/20" },
+  };
+  const meta = message.agent ? agentMeta[message.agent] : null;
+
   return (
     <div className="flex gap-3 group">
       <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500/20 to-blue-500/20 border border-white/10 flex items-center justify-center text-sm flex-shrink-0 mt-1">
         ✦
       </div>
       <div className="flex-1 min-w-0">
+        {meta && (
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium ${meta.color}`}>
+              <span>{meta.icon}</span>
+              <span>{meta.label} Agent</span>
+            </span>
+          </div>
+        )}
         <div className="bg-white/5 border border-white/8 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-white/85 leading-relaxed">
           <div dangerouslySetInnerHTML={{ __html: formatContent(message.content) }} />
         </div>
         <div className="flex items-center gap-1 mt-1">
           <CopyButton text={message.content} />
-          <p className="text-white/20 text-xs">
-            {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-          </p>
+          <Timestamp date={message.timestamp} />
         </div>
       </div>
     </div>

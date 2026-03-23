@@ -56,7 +56,13 @@ export function useChat(token: string | null) {
       });
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       const data = await res.json();
-      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "assistant", content: data.response, timestamp: new Date() }]);
+      setMessages((prev) => [...prev, {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: data.response,
+        timestamp: new Date(),
+        agent: data.agent ?? undefined,
+      }]);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Something went wrong";
       setError(msg);

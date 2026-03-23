@@ -15,6 +15,7 @@ class State(TypedDict):
     next: str
     user_id: str
     iterations: Annotated[int, operator.add]
+    agent_used: str
 
 
 def route_decision(state):

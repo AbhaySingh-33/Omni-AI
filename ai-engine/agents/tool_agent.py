@@ -26,11 +26,11 @@ def tool_agent(state):
     if query.lower() in ("allow", "deny"):
         pending = pending_confirmations.get("last")
         if not pending:
-            return {"messages": [("assistant", "No pending action to confirm.")]}
+            return {"messages": [("assistant", "No pending action to confirm.")], "agent_used": "tools"}
 
         if query.lower() == "deny":
             pending_confirmations.clear()
-            return {"messages": [("assistant", "Action cancelled.")]}
+            return {"messages": [("assistant", "Action cancelled.")], "agent_used": "tools"}
 
         # User said allow — execute the pending tool call
         tool = pending["tool"]
@@ -39,7 +39,7 @@ def tool_agent(state):
         pending_confirmations.clear()
 
         output = _run_tool(tool, tool_input, extra)
-        return {"messages": [("assistant", f"**{tool}** result:\n\n{output}")]}
+        return {"messages": [("assistant", f"**{tool}** result:\n\n{output}")], "agent_used": "tools"}
 
     # Sanitize input before injecting into LLM prompt
     safe_query = query.replace("{", "{{").replace("}", "}}")
@@ -70,7 +70,7 @@ Query: {safe_query}"""
     try:
         tool_data = json.loads(content)
     except Exception:
-        return {"messages": [("assistant", f"Tool parsing failed. Raw LLM output: {content}")]}
+        return {"messages": [("assistant", f"Tool parsing failed. Raw LLM output: {content}")], "agent_used": "tools"}
 
     tool = tool_data.get("tool")
     tool_input = tool_data.get("input", "")
@@ -80,7 +80,7 @@ Query: {safe_query}"""
 
     # Hard blocked
     if status is False:
-        return {"messages": [("assistant", message)]}
+        return {"messages": [("assistant", message)], "agent_used": "tools"}
 
     # Needs confirmation — store pending and ask user
     if status == "confirm":
@@ -89,8 +89,8 @@ Query: {safe_query}"""
             "tool_input": tool_input,
             "extra": extra
         }
-        return {"messages": [("assistant", message)]}
+        return {"messages": [("assistant", message)], "agent_used": "tools"}
 
     # Safe — execute immediately
     output = _run_tool(tool, tool_input, extra)
-    return {"messages": [("assistant", f"**{tool}** result:\n\n{output}")]}
+    return {"messages": [("assistant", f"**{tool}** result:\n\n{output}")], "agent_used": "tools"}
