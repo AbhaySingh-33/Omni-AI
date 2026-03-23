@@ -17,50 +17,92 @@ RESEARCH_KEYWORDS = [
     "what happened", "chapter", "plot", "novel", "character", "passage"
 ]
 
+MAX_ITERATIONS = 5
+
 def router_agent(state):
     messages = state["messages"]
-    query = messages[-1].content.lower()
+    iterations = state.get("iterations", 0)
+    
+    # Safety Check: Loop Limit
+    if iterations >= MAX_ITERATIONS:
+        return {"next": "finish"}
 
-    # Fast-path: confirmation replies → always tools
-    if query.strip() in ("allow", "deny"):
-        return {"next": "tools"}
+    last_message = messages[-1]
+    last_content = last_message.content.lower().strip()
 
-    # Fast-path: if query contains live data keywords → always tools
-    if any(kw in query for kw in LIVE_DATA_KEYWORDS):
-        return {"next": "tools"}
+    # --- STOPPING CONDITIONS ---
 
-    # Fast-path: document/PDF/story questions → always research
-    if any(kw in query for kw in RESEARCH_KEYWORDS):
-        return {"next": "research"}
+    # 1. User Confirmation Request (from tool_agent)
+    # If the last message asks for confirmation, we MUST stop to let the user reply.
+    if "confirm" in last_content and ("allow" in last_content or "deny" in last_content):
+        return {"next": "finish"}
 
-    # Sanitize user input before injecting into LLM prompt
-    safe_content = messages[-1].content.replace("{", "{{").replace("}", "}}")
+    # 2. User says "allow" or "deny" -> Route back to tools immediately
+    if last_message.type == "human" and last_content in ("allow", "deny"):
+        return {"next": "tools", "iterations": 1}
 
-    prompt = f"""You are a router. Classify the user query into exactly one category.
+    # --- FIRST STEP LOGIC (User just spoke) ---
+    if last_message.type == "human" and iterations == 0:
+        # Fast-path: live data -> tools
+        if any(kw in last_content for kw in LIVE_DATA_KEYWORDS):
+            return {"next": "tools", "iterations": 1}
+
+        # Fast-path: documents -> research
+        if any(kw in last_content for kw in RESEARCH_KEYWORDS):
+            return {"next": "research", "iterations": 1}
+
+        # LLM Classification
+        prompt = f"""You are a router. Classify the user query into exactly one category.
 
 Categories:
-- memory    → asking about past conversations or what was said before
-- reasoning → general knowledge, explanations, coding help, opinions
-- research  → questions about documents or data the user has uploaded
-- tools     → anything that requires taking an action or fetching live data:
-              * create/read/write/list files
-              * run terminal/shell commands
-              * web search, weather, news
-              * math calculations
+- memory    → asking about past conversations
+- reasoning → general knowledge, explanations, coding help
+- research  → questions about documents/files
+- tools     → actions (create/read/write/run), search, math
 
-IMPORTANT: If the user wants to DO something (create, write, run, search, calculate) → tools
+Query: {last_content}
 
-Respond with ONLY one word: memory / reasoning / research / tools
+Respond with ONLY one word: memory / reasoning / research / tools"""
+        
+        result = llm.invoke(prompt)
+        content = result.content.strip().lower()
+        match = re.search(r"\b(memory|reasoning|research|tools)\b", content)
+        route = match.group(1) if match else "reasoning"
+        return {"next": route, "iterations": 1}
 
-Query: {safe_content}"""
+    # --- SUPERVISOR LOGIC (Agent just spoke) ---
+    # The previous agent has finished. Do we need another step?
+    
+    # If the last step was effective (e.g. tool output), maybe we are done or need reasoning.
+    # We ask the LLM to decide.
+
+    prompt = f"""You are a Supervisor Agent. A worker agent has just performed a task.
+    Decide what to do next.
+
+    Conversation History:
+    {messages[-2].content if len(messages) > 1 else ''}
+    
+    Last Output (from Worker):
+    {last_content}
+
+    Options:
+    - finish    → The user's request is fully satisfied.
+    - reasoning → Need to explain, summarize, or format the result.
+    - research  → Need to look up documents.
+    - tools     → Need to perform another action (search, file op).
+    - memory    → Need to check memory.
+
+    CRITICAL: 
+    - If the last output is an answer to the user, valid and complete, choose "finish".
+    - If the last output is a tool result (e.g. weather data), choose "reasoning" to explain it to the user.
+    - Do NOT loop back to the SAME agent unless absolutely necessary.
+
+    Respond with ONLY one word."""
 
     result = llm.invoke(prompt)
-    content = result.content
+    content = result.content.strip().lower()
+    
+    match = re.search(r"\b(finish|reasoning|research|tools|memory)\b", content)
+    route = match.group(1) if match else "finish"
 
-    if isinstance(content, list):
-        content = "".join([item.get("text", "") for item in content if isinstance(item, dict)])
-
-    match = re.search(r"\b(memory|reasoning|research|tools)\b", content.strip().lower())
-    route = match.group(1) if match else "reasoning"
-
-    return {"next": route}
+    return {"next": route, "iterations": 1}

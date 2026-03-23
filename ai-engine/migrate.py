@@ -1,6 +1,18 @@
-from app.db import cursor, conn
+from app.db import get_connection
 
-cursor.execute("""
+conn = get_connection()
+cur = conn.cursor()
+
+cur.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+
+cur.execute("""
 CREATE TABLE IF NOT EXISTS chat_history (
     id SERIAL PRIMARY KEY,
     user_id TEXT,
@@ -10,5 +22,15 @@ CREATE TABLE IF NOT EXISTS chat_history (
 )
 """)
 
+cur.execute("""
+CREATE TABLE IF NOT EXISTS summarized_memory (
+    id SERIAL PRIMARY KEY,
+    user_id TEXT UNIQUE NOT NULL,
+    summary TEXT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+
 conn.commit()
-print("Table created successfully.")
+cur.close()
+print("Tables created successfully.")

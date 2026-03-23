@@ -1,77 +1,86 @@
-from app.db import cursor, conn
+from app.db import get_connection
 from app.gemini import llm
 
-SUMMARIZE_AFTER = 10  # compress every N raw messages
+SUMMARIZE_AFTER = 10
 
 
 def save_chat(user_id, message, response):
-    cursor.execute(
-        "INSERT INTO chat_history (user_id, message, response) VALUES (%s, %s, %s)",
-        (user_id, message, response)
-    )
+    conn = get_connection()
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO chat_history (user_id, message, response) VALUES (%s, %s, %s)",
+            (user_id, message, response),
+        )
     conn.commit()
     _maybe_summarize(user_id)
 
 
-def get_history(user_id, limit=5):
-    cursor.execute(
-        "SELECT message, response FROM chat_history WHERE user_id=%s ORDER BY created_at DESC LIMIT %s",
-        (user_id, limit)
-    )
-    return cursor.fetchall()
+def get_history(user_id, limit=20):
+    conn = get_connection()
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT message, response FROM chat_history WHERE user_id=%s ORDER BY created_at ASC LIMIT %s",
+            (user_id, limit),
+        )
+        return cur.fetchall()
 
 
 def get_summary(user_id):
-    cursor.execute(
-        "SELECT summary FROM summarized_memory WHERE user_id=%s",
-        (user_id,)
-    )
-    row = cursor.fetchone()
+    conn = get_connection()
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT summary FROM summarized_memory WHERE user_id=%s",
+            (user_id,),
+        )
+        row = cur.fetchone()
     return row[0] if row else None
 
 
 def _maybe_summarize(user_id):
-    cursor.execute(
-        "SELECT COUNT(*) FROM chat_history WHERE user_id=%s",
-        (user_id,)
-    )
-    count = cursor.fetchone()[0]
+    conn = get_connection()
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT COUNT(*) FROM chat_history WHERE user_id=%s", (user_id,)
+        )
+        count = cur.fetchone()[0]
 
-    if count < SUMMARIZE_AFTER:
-        return
+        if count < SUMMARIZE_AFTER:
+            return
 
-    # Fetch all raw chats to summarize
-    cursor.execute(
-        "SELECT message, response FROM chat_history WHERE user_id=%s ORDER BY created_at ASC",
-        (user_id,)
-    )
-    chats = cursor.fetchall()
+        cur.execute(
+            "SELECT message, response FROM chat_history WHERE user_id=%s ORDER BY created_at ASC",
+            (user_id,),
+        )
+        chats = cur.fetchall()
+
     history_text = "\n".join([f"User: {m}\nAI: {r}" for m, r in chats])
-
     existing_summary = get_summary(user_id)
     prior = f"Prior summary:\n{existing_summary}\n\n" if existing_summary else ""
 
-    prompt = f"""{prior}Summarize the following conversation into a concise memory paragraph capturing key facts, preferences, and context about the user:
+    prompt = f"""{prior}Summarize the following conversation into a concise memory paragraph:
 
 {history_text}
 
 Summary:"""
 
-    result = llm.invoke(prompt)
-    new_summary = result.content.strip()
+    new_summary = llm.invoke(prompt).content.strip()
 
-    # Upsert summary
-    cursor.execute("""
-        INSERT INTO summarized_memory (user_id, summary, updated_at)
-        VALUES (%s, %s, NOW())
-        ON CONFLICT (user_id) DO UPDATE SET summary=EXCLUDED.summary, updated_at=NOW()
-    """, (user_id, new_summary))
-
-    # Delete compressed raw chats, keep last 5 as recent context
-    cursor.execute("""
-        DELETE FROM chat_history WHERE user_id=%s AND id NOT IN (
-            SELECT id FROM chat_history WHERE user_id=%s ORDER BY created_at DESC LIMIT 5
+    conn = get_connection()
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO summarized_memory (user_id, summary, updated_at)
+            VALUES (%s, %s, NOW())
+            ON CONFLICT (user_id) DO UPDATE SET summary=EXCLUDED.summary, updated_at=NOW()
+            """,
+            (user_id, new_summary),
         )
-    """, (user_id, user_id))
-
+        cur.execute(
+            """
+            DELETE FROM chat_history WHERE user_id=%s AND id NOT IN (
+                SELECT id FROM chat_history WHERE user_id=%s ORDER BY created_at DESC LIMIT 5
+            )
+            """,
+            (user_id, user_id),
+        )
     conn.commit()

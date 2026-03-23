@@ -19,16 +19,16 @@ def _chunk_text(text):
     return [c for c in chunks if c]
 
 
-def store_text(text, doc_id):
+def store_text(text, doc_id, filename="unknown", user_id="default_user"):
     chunks = _chunk_text(text)
     vectors = []
     for i, chunk in enumerate(chunks):
-        chunk_id = f"{doc_id}_chunk_{i}"
+        chunk_id = f"{user_id}_{doc_id}_chunk_{i}"
         vector = embeddings.embed_query(chunk)
         vectors.append({
             "id": chunk_id,
             "values": vector,
-            "metadata": {"text": chunk, "doc_id": doc_id, "chunk": i}
+            "metadata": {"text": chunk, "doc_id": doc_id, "chunk": i, "filename": filename, "user_id": user_id}
         })
 
     # Upsert in batches of 100 (Pinecone limit)
@@ -36,6 +36,7 @@ def store_text(text, doc_id):
         index.upsert(vectors[i:i + 100])
 
     print(f"Stored {len(chunks)} chunks for doc: {doc_id}")
+    return doc_id
 
 
 def _extract_text(file_path):
@@ -61,18 +62,18 @@ def _extract_text(file_path):
     return None
 
 
-def store_pdf(file_path):
+def store_pdf(file_path, filename=None, user_id="default_user"):
     if not os.path.exists(file_path):
         print(f"File not found: {file_path}")
-        return
+        return None
 
     full_text = _extract_text(file_path)
     if not full_text:
         print(f"Could not extract any text from: {file_path}")
-        return
+        return None
 
-    # Stable ID based on file content so re-ingesting the same file is idempotent
     doc_id = hashlib.md5(open(file_path, "rb").read()).hexdigest()
-
-    store_text(full_text, doc_id)
+    fname = filename or os.path.basename(file_path)
+    store_text(full_text, doc_id, fname, user_id)
     print(f"Ingested PDF: {file_path}")
+    return doc_id

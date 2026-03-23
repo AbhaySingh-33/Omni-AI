@@ -46,3 +46,5 @@ build/
 *.p12
 *.pfx
 secrets/
+tests
+

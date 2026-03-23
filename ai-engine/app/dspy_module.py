@@ -22,6 +22,13 @@ class QASignature(dspy.Signature):
     answer: str = dspy.OutputField()
 
 
+class ContextQASignature(dspy.Signature):
+    """Answer the question using the provided context."""
+    context: str = dspy.InputField(desc="Previous conversation or retrieved data")
+    question: str = dspy.InputField()
+    answer: str = dspy.OutputField()
+
+
 class SummarizeSignature(dspy.Signature):
     """Summarize the given text into key points."""
     text: str = dspy.InputField()
@@ -44,6 +51,14 @@ class QAModule(dspy.Module):
         return self.predict(question=question)  # returns prediction object with .answer
 
 
+class ContextQAModule(dspy.Module):
+    def __init__(self):
+        self.predict = dspy.Predict(ContextQASignature)
+
+    def forward(self, question: str, context: str):
+        return self.predict(question=question, context=context)
+
+
 class SummarizeModule(dspy.Module):
     def __init__(self):
         self.predict = dspy.Predict(SummarizeSignature)
@@ -62,5 +77,6 @@ class ClassifyModule(dspy.Module):
 
 # Singleton instances
 qa = QAModule()
+qa_context = ContextQAModule()
 summarize = SummarizeModule()
 classify = ClassifyModule()
