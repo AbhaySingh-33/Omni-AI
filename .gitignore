@@ -47,4 +47,5 @@ build/
 *.pfx
 secrets/
 tests
-
+docs
+server

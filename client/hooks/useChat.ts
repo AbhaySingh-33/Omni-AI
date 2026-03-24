@@ -10,9 +10,10 @@ export function useChat(token: string | null) {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const authHeaders = token
-    ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
-    : { "Content-Type": "application/json" };
+  const authHeaders: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
 
   useEffect(() => {
     if (!token) { setHistoryLoading(false); return; }
