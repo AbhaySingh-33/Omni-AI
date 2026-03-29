@@ -12,6 +12,7 @@ const agents: AgentInfo[] = [
   { id: "research", label: "Research", description: "RAG over your documents", color: "emerald", icon: "🔍" },
   { id: "tools", label: "Tools", description: "Web search, files, terminal", color: "amber", icon: "🛠️" },
   { id: "memory", label: "Memory", description: "Recalls past conversations", color: "rose", icon: "💾" },
+  { id: "interview", label: "Interview", description: "Resume & interview prep", color: "purple", icon: "💼" },
 ];
 
 const colorMap: Record<string, string> = {
@@ -20,6 +21,7 @@ const colorMap: Record<string, string> = {
   emerald: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
   amber: "bg-amber-500/10 text-amber-400 border-amber-500/20",
   rose: "bg-rose-500/10 text-rose-400 border-rose-500/20",
+  purple: "bg-purple-500/10 text-purple-400 border-purple-500/20",
 };
 
 const dotMap: Record<string, string> = {
@@ -28,6 +30,7 @@ const dotMap: Record<string, string> = {
   emerald: "bg-emerald-400",
   amber: "bg-amber-400",
   rose: "bg-rose-400",
+  purple: "bg-purple-400",
 };
 
 interface SidebarProps {
@@ -44,6 +47,7 @@ export default function Sidebar({ isOpen, onClose, uploadCount, token }: Sidebar
   // pathname check for active link state
   const isChatActive = pathname === "/" || pathname === "";
   const isKgActive = pathname?.startsWith("/kg");
+  const isInterviewActive = pathname?.startsWith("/interview");
 
   return (
     <>
@@ -83,22 +87,33 @@ export default function Sidebar({ isOpen, onClose, uploadCount, token }: Sidebar
 
             {/* Navigation Section */}
             <div className="px-3 pb-4 space-y-1">
-                <Link 
+                <Link
                     href="/"
                     className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isChatActive 
-                        ? "bg-white/10 text-white" 
+                    isChatActive
+                        ? "bg-white/10 text-white"
                         : "text-white/50 hover:text-white hover:bg-white/5"
                     }`}
                 >
                     <span className="text-lg opacity-80">💬</span>
                     Chat
                 </Link>
-                <Link 
+                <Link
+                    href="/interview"
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isInterviewActive
+                        ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
+                        : "text-white/50 hover:text-white hover:bg-white/5"
+                    }`}
+                >
+                    <span className="text-lg opacity-80">💼</span>
+                    Interview Prep
+                </Link>
+                <Link
                     href="/kg"
                     className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isKgActive 
-                        ? "bg-white/10 text-white" 
+                    isKgActive
+                        ? "bg-white/10 text-white"
                         : "text-white/50 hover:text-white hover:bg-white/5"
                     }`}
                 >

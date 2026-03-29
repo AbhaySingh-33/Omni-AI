@@ -8,6 +8,7 @@ from agents.router_agent import router_agent
 from agents.research_agent import research_agent
 from agents.tool_agent import tool_agent
 from agents.memory_agent import memory_agent
+from agents.interview_agent import interview_agent
 
 
 class State(TypedDict):
@@ -31,6 +32,7 @@ def build_graph():
     graph.add_node("research", research_agent)
     graph.add_node("tools", tool_agent)
     graph.add_node("memory", memory_agent)
+    graph.add_node("interview", interview_agent)
 
     # Start
     graph.add_edge(START, "router")
@@ -44,6 +46,7 @@ def build_graph():
             "research": "research",
             "tools": "tools",
             "memory": "memory",
+            "interview": "interview",
             "finish": END,
         }
     )
@@ -53,5 +56,6 @@ def build_graph():
     graph.add_edge("research", "router")
     graph.add_edge("tools", "router")
     graph.add_edge("memory", "router")
+    graph.add_edge("interview", "router")
 
     return graph.compile()

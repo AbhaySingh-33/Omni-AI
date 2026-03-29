@@ -10,6 +10,7 @@ from routes.documents import router as documents_router
 from routes.system import router as system_router
 from routes.tts import router as tts_router
 from routes.kg import router as kg_router
+from routes.interview import router as interview_router
 
 app = FastAPI()
 
@@ -26,3 +27,15 @@ app.include_router(documents_router)
 app.include_router(tts_router)
 app.include_router(system_router)
 app.include_router(kg_router)
+app.include_router(interview_router)
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database tables on startup."""
+    try:
+        from services.interview import init_interview_tables
+        init_interview_tables()
+        print("Interview prep tables initialized")
+    except Exception as e:
+        print(f"Warning: Could not initialize interview tables: {e}")
