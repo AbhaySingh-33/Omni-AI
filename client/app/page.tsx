@@ -27,7 +27,12 @@ export default function Home() {
 
   return (
     <div className="flex h-screen bg-[#0a0a0a] text-white overflow-hidden">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} uploadCount={uploadCount} />
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        uploadCount={uploadCount}
+        token={user?.token ?? null}
+      />
 
       <div className="flex flex-col flex-1 min-w-0">
         <header className="flex items-center gap-3 px-4 py-4 border-b border-white/5 bg-[#0a0a0a] flex-shrink-0">
@@ -43,7 +48,7 @@ export default function Home() {
           </button>
           <div className="flex-1">
             <h1 className="text-sm font-medium text-white/80">OmniAI</h1>
-            <p className="text-xs text-white/30">Multi-agent · Reasoning · Research · Tools · Memory</p>
+            <p className="text-xs text-white/30">Multi-agent . Reasoning . Research . Tools . Memory</p>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 text-xs text-emerald-400/70 bg-emerald-400/10 border border-emerald-400/20 px-2.5 py-1 rounded-full">
@@ -69,6 +74,7 @@ export default function Home() {
             loading={loading}
             onClear={clearMessages}
             onUploadSuccess={() => setUploadCount((c) => c + 1)}
+            token={user?.token ?? null}
           />
         </div>
       </div>

@@ -1,7 +1,7 @@
 from app.pinecone_client import index
 from app.embeddings import embeddings
 
-MIN_SCORE = 0.60
+MIN_SCORE = 0.45
 
 def retrieve_context(query, user_id="default_user"):
     query_vector = embeddings.embed_query(query)

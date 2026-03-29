@@ -5,26 +5,24 @@ import pdfplumber
 import os
 import hashlib
 
-CHUNK_SIZE = 500      # characters per chunk
-CHUNK_OVERLAP = 100   # overlap between chunks to preserve context
-
-
-def _chunk_text(text):
-    chunks = []
-    start = 0
-    while start < len(text):
-        end = start + CHUNK_SIZE
-        chunks.append(text[start:end].strip())
-        start += CHUNK_SIZE - CHUNK_OVERLAP
-    return [c for c in chunks if c]
+from services.text_chunker import chunk_text
+from services.kg import ingest_document_text
 
 
 def store_text(text, doc_id, filename="unknown", user_id="default_user"):
-    chunks = _chunk_text(text)
+    chunks = chunk_text(text)
+    
+    # Batch embed all chunks at once - much faster!
+    print(f"Embedding {len(chunks)} chunks for doc {doc_id}...")
+    try:
+        all_vectors = embeddings.embed_documents(chunks)
+    except Exception as e:
+        print(f"Error embedding documents: {e}")
+        return None
+
     vectors = []
-    for i, chunk in enumerate(chunks):
+    for i, (chunk, vector) in enumerate(zip(chunks, all_vectors)):
         chunk_id = f"{user_id}_{doc_id}_chunk_{i}"
-        vector = embeddings.embed_query(chunk)
         vectors.append({
             "id": chunk_id,
             "values": vector,
@@ -75,5 +73,11 @@ def store_pdf(file_path, filename=None, user_id="default_user"):
     doc_id = hashlib.md5(open(file_path, "rb").read()).hexdigest()
     fname = filename or os.path.basename(file_path)
     store_text(full_text, doc_id, fname, user_id)
+
+    try:
+        ingest_document_text(full_text, doc_id, fname, user_id)
+    except Exception as exc:
+        print(f"KG ingest skipped: {exc}")
+
     print(f"Ingested PDF: {file_path}")
     return doc_id

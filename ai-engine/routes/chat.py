@@ -10,6 +10,7 @@ from core.app_state import graph
 from services.formatting import format_response
 from services.memory import save_chat
 from services.tts import synthesize_speech
+from services.kg import ingest_user_message
 
 router = APIRouter()
 
@@ -39,6 +40,11 @@ async def chat(req: ChatRequest, user=Depends(get_current_user)):
 
     agent_used = result.get("agent_used") or result.get("next", "reasoning")
     save_chat(user_id, checked_input, safe_response)
+
+    try:
+        ingest_user_message(checked_input, user_id)
+    except Exception as exc:
+        print(f"KG message ingest skipped: {exc}")
 
     payload = {"response": safe_response, "agent": agent_used}
 

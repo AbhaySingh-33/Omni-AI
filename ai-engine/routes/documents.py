@@ -19,7 +19,8 @@ async def upload_pdf(file: UploadFile = File(...), user=Depends(get_current_user
         tmp_path = tmp.name
 
     try:
-        doc_id = store_pdf(tmp_path, file.filename, user["user_id"])
+        from fastapi.concurrency import run_in_threadpool
+        doc_id = await run_in_threadpool(store_pdf, tmp_path, file.filename, user["user_id"])
     finally:
         os.unlink(tmp_path)
 
@@ -59,4 +60,11 @@ def delete_document(doc_id: str, user=Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="Document not found")
     for i in range(0, len(ids), 100):
         index.delete(ids=ids[i:i + 100])
+
+    try:
+        from services.kg import delete_kg_for_document
+        delete_kg_for_document(doc_id, user["user_id"])
+    except Exception as exc:
+        print(f"KG delete skipped: {exc}")
+
     return {"status": "ok", "deleted_chunks": len(ids)}

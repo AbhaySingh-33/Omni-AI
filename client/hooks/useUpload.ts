@@ -5,7 +5,7 @@ const AI_ENGINE_URL = process.env.NEXT_PUBLIC_AI_ENGINE_URL || "http://localhost
 
 export type UploadStatus = "idle" | "uploading" | "success" | "error";
 
-export function useUpload(onSuccess?: () => void) {
+export function useUpload(token: string | null, onSuccess?: () => void) {
   const [status, setStatus] = useState<UploadStatus>("idle");
   const [fileName, setFileName] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -21,6 +21,7 @@ export function useUpload(onSuccess?: () => void) {
     try {
       const res = await fetch(`${AI_ENGINE_URL}/upload`, {
         method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         body: form,
       });
       const data = await res.json();
@@ -33,13 +34,12 @@ export function useUpload(onSuccess?: () => void) {
       setMessage(err instanceof Error ? err.message : "Upload failed");
     }
 
-    // Reset after 4s
     setTimeout(() => {
       setStatus("idle");
       setFileName(null);
       setMessage(null);
     }, 4000);
-  }, []);
+  }, [token, onSuccess]);
 
   return { status, fileName, message, uploadPdf };
 }

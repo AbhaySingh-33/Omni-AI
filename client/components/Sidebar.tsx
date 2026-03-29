@@ -1,5 +1,7 @@
 "use client";
 import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { AgentInfo } from "@/lib/types";
 import DocumentsPanel from "@/components/DocumentsPanel";
 import { useDocuments } from "@/hooks/useDocuments";
@@ -32,13 +34,19 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   uploadCount: number;
+  token: string | null;
 }
 
-export default function Sidebar({ isOpen, onClose, uploadCount }: SidebarProps) {
-  const { docs, totalChunks, loading, deleting, deleteDoc } = useDocuments(uploadCount);
+export default function Sidebar({ isOpen, onClose, uploadCount, token }: SidebarProps) {
+  const { docs, totalChunks, loading, deleting, deleteDoc } = useDocuments(token, uploadCount);
+  const pathname = usePathname();
+
+  // pathname check for active link state
+  const isChatActive = pathname === "/" || pathname === "";
+  const isKgActive = pathname?.startsWith("/kg");
+
   return (
     <>
-      {/* Overlay for mobile */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/60 z-20 lg:hidden"
@@ -54,25 +62,52 @@ export default function Sidebar({ isOpen, onClose, uploadCount }: SidebarProps) 
           ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
       >
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-5 py-5 border-b border-white/5">
-          <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0">
-            <Image
-              src="/AI.jpg"
-              alt="OmniAI Logo"
-              width={32}
-              height={32}
-              className="w-full h-full object-cover"
-              priority
-            />
-          </div>
-          <div>
-            <h1 className="text-white font-semibold text-sm tracking-wide">OmniAI</h1>
-            <p className="text-white/30 text-xs">Multi-Agent System</p>
-          </div>
+        <div className="flex flex-col gap-0 border-b border-white/5 bg-[#0a0a0a]">
+            {/* Header / Logo */}
+            <div className="flex items-center gap-3 px-5 py-5">
+                <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0">
+                    <Image
+                    src="/AI.jpg"
+                    alt="OmniAI Logo"
+                    width={32}
+                    height={32}
+                    className="w-full h-full object-cover"
+                    priority
+                    />
+                </div>
+                <div>
+                    <h1 className="text-white font-semibold text-sm tracking-wide">OmniAI</h1>
+                    <p className="text-white/30 text-xs">Multi-Agent System</p>
+                </div>
+            </div>
+
+            {/* Navigation Section */}
+            <div className="px-3 pb-4 space-y-1">
+                <Link 
+                    href="/"
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isChatActive 
+                        ? "bg-white/10 text-white" 
+                        : "text-white/50 hover:text-white hover:bg-white/5"
+                    }`}
+                >
+                    <span className="text-lg opacity-80">💬</span>
+                    Chat
+                </Link>
+                <Link 
+                    href="/kg"
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isKgActive 
+                        ? "bg-white/10 text-white" 
+                        : "text-white/50 hover:text-white hover:bg-white/5"
+                    }`}
+                >
+                    <span className="text-lg opacity-80">🕸️</span>
+                    Knowledge Graph
+                </Link>
+            </div>
         </div>
 
-        {/* Agents */}
         <div className="flex-1 overflow-y-auto px-4 py-5 space-y-2">
           <p className="text-white/30 text-xs font-medium uppercase tracking-widest mb-4 px-1">
             Active Agents
@@ -94,7 +129,8 @@ export default function Sidebar({ isOpen, onClose, uploadCount }: SidebarProps) 
           ))}
         </div>
 
-        {/* Footer */}
+        {/* Removed KnowledgeGraphPanel from here */}
+
         <DocumentsPanel docs={docs} totalChunks={totalChunks} loading={loading} deleting={deleting} onDelete={deleteDoc} />
 
         <div className="px-5 py-4 border-t border-white/5">

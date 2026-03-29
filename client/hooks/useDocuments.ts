@@ -9,16 +9,19 @@ export interface DocInfo {
   chunks: number;
 }
 
-export function useDocuments(refreshTrigger: number) {
+export function useDocuments(token: string | null, refreshTrigger: number) {
   const [docs, setDocs] = useState<DocInfo[]>([]);
   const [totalChunks, setTotalChunks] = useState(0);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
 
   const fetchDocs = useCallback(async () => {
+    if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch(`${AI_ENGINE_URL}/documents`);
+      const res = await fetch(`${AI_ENGINE_URL}/documents`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const data = await res.json();
       setDocs(data.documents ?? []);
       setTotalChunks(data.total_chunks ?? 0);
@@ -27,12 +30,16 @@ export function useDocuments(refreshTrigger: number) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   const deleteDoc = useCallback(async (doc_id: string) => {
+    if (!token) return;
     setDeleting(doc_id);
     try {
-      const res = await fetch(`${AI_ENGINE_URL}/documents/${doc_id}`, { method: "DELETE" });
+      const res = await fetch(`${AI_ENGINE_URL}/documents/${doc_id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.ok) throw new Error("Delete failed");
       setDocs((prev) => prev.filter((d) => d.doc_id !== doc_id));
       setTotalChunks((prev) => {
@@ -42,7 +49,7 @@ export function useDocuments(refreshTrigger: number) {
     } finally {
       setDeleting(null);
     }
-  }, [docs]);
+  }, [docs, token]);
 
   useEffect(() => { fetchDocs(); }, [fetchDocs, refreshTrigger]);
 

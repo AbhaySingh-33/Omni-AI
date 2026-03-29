@@ -7,13 +7,14 @@ interface ChatInputProps {
   loading: boolean;
   onClear: () => void;
   onUploadSuccess: () => void;
+  token: string | null;
 }
 
-export default function ChatInput({ onSend, loading, onClear, onUploadSuccess }: ChatInputProps) {
+export default function ChatInput({ onSend, loading, onClear, onUploadSuccess, token }: ChatInputProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { status: uploadStatus, fileName, message: uploadMessage, uploadPdf } = useUpload(onUploadSuccess);
+  const { status: uploadStatus, fileName, message: uploadMessage, uploadPdf } = useUpload(token, onUploadSuccess);
 
   const handleSend = () => {
     const trimmed = value.trim();
@@ -52,8 +53,6 @@ export default function ChatInput({ onSend, loading, onClear, onUploadSuccess }:
   return (
     <div className="px-4 pb-5 pt-3 border-t border-white/5 bg-[#0a0a0a]">
       <div className="max-w-3xl mx-auto space-y-2">
-
-        {/* Upload status toast */}
         {!uploadIdle && (
           <div
             className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs border transition-all ${
@@ -67,20 +66,17 @@ export default function ChatInput({ onSend, loading, onClear, onUploadSuccess }:
             {uploadBusy && (
               <span className="w-3 h-3 border-2 border-violet-400/30 border-t-violet-400 rounded-full animate-spin flex-shrink-0" />
             )}
-            {uploadStatus === "success" && <span>✓</span>}
-            {uploadStatus === "error" && <span>✕</span>}
+            {uploadStatus === "success" && <span>OK</span>}
+            {uploadStatus === "error" && <span>ERR</span>}
             <span className="truncate">
               {uploadBusy
-                ? `Ingesting "${fileName}" into RAG…`
+                ? `Ingesting "${fileName}" into RAG...`
                 : uploadMessage}
             </span>
           </div>
         )}
 
-        {/* Input row */}
         <div className="flex items-end gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 focus-within:border-violet-500/50 focus-within:bg-white/7 transition-all">
-
-          {/* PDF attach button */}
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
@@ -109,7 +105,7 @@ export default function ChatInput({ onSend, loading, onClear, onUploadSuccess }:
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
             onInput={handleInput}
-            placeholder="Ask anything… or attach a PDF to search it"
+            placeholder="Ask anything... or attach a PDF to search it"
             rows={1}
             disabled={loading}
             className="flex-1 bg-transparent text-white/85 placeholder-white/25 text-sm resize-none outline-none leading-relaxed max-h-40 disabled:opacity-50"
@@ -121,7 +117,7 @@ export default function ChatInput({ onSend, loading, onClear, onUploadSuccess }:
                 onClick={() => { setValue(""); if (textareaRef.current) textareaRef.current.style.height = "auto"; }}
                 className="text-white/25 hover:text-white/50 transition-colors text-xs"
               >
-                ✕
+                X
               </button>
             )}
             <button
@@ -143,9 +139,9 @@ export default function ChatInput({ onSend, loading, onClear, onUploadSuccess }:
 
         <div className="flex items-center justify-between px-1">
           <p className="text-white/20 text-xs">
-            <kbd className="bg-white/10 px-1 rounded text-white/30">Enter</kbd> send ·{" "}
-            <kbd className="bg-white/10 px-1 rounded text-white/30">Shift+Enter</kbd> newline ·{" "}
-            <span className="text-white/15">📎 PDF → RAG</span>
+            <kbd className="bg-white/10 px-1 rounded text-white/30">Enter</kbd> send .{" "}
+            <kbd className="bg-white/10 px-1 rounded text-white/30">Shift+Enter</kbd> newline .{" "}
+            <span className="text-white/15">PDF to RAG</span>
           </p>
           <button onClick={onClear} className="text-white/20 hover:text-white/40 text-xs transition-colors">
             Clear chat
