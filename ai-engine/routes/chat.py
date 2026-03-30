@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, BackgroundTasks
 from pydantic import BaseModel
 from typing import Optional
 import base64
@@ -15,6 +15,20 @@ from services.kg import ingest_user_message
 router = APIRouter()
 
 
+def _save_chat_safe(user_id: str, checked_input: str, safe_response: str) -> None:
+    try:
+        save_chat(user_id, checked_input, safe_response)
+    except Exception as exc:
+        print(f"save_chat skipped: {exc}")
+
+
+def _ingest_user_message_safe(checked_input: str, user_id: str) -> None:
+    try:
+        ingest_user_message(checked_input, user_id)
+    except Exception as exc:
+        print(f"KG message ingest skipped: {exc}")
+
+
 class ChatRequest(BaseModel):
     message: str
     voice: bool = False
@@ -22,7 +36,7 @@ class ChatRequest(BaseModel):
 
 
 @router.post("/chat")
-async def chat(req: ChatRequest, user=Depends(get_current_user)):
+async def chat(req: ChatRequest, background_tasks: BackgroundTasks, user=Depends(get_current_user)):
     user_id = user["user_id"]
 
     is_valid, checked_input = validate_input(req.message)
@@ -39,12 +53,9 @@ async def chat(req: ChatRequest, user=Depends(get_current_user)):
     safe_response = validate_output(final_response)
 
     agent_used = result.get("agent_used") or result.get("next", "reasoning")
-    save_chat(user_id, checked_input, safe_response)
-
-    try:
-        ingest_user_message(checked_input, user_id)
-    except Exception as exc:
-        print(f"KG message ingest skipped: {exc}")
+    # Persist to DB/KG asynchronously after the response is sent.
+    background_tasks.add_task(_save_chat_safe, user_id, checked_input, safe_response)
+    background_tasks.add_task(_ingest_user_message_safe, checked_input, user_id)
 
     payload = {"response": safe_response, "agent": agent_used}
 

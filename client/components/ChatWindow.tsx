@@ -139,6 +139,7 @@ function AssistantMessage({ message }: { message: Message }) {
     tools:     { label: "Tools",     icon: "🛠️", color: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
     memory:    { label: "Memory",    icon: "💾", color: "text-rose-400 bg-rose-500/10 border-rose-500/20" },
     router:    { label: "Router",    icon: "⚡", color: "text-violet-400 bg-violet-500/10 border-violet-500/20" },
+    interview: { label: "Interview", icon: "💼", color: "text-purple-400 bg-purple-500/10 border-purple-500/20" },
   };
   const meta = message.agent ? agentMeta[message.agent] : null;
 
