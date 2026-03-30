@@ -101,7 +101,7 @@ export default function KnowledgeGraphPanel({ token, isFullPage = false }: Knowl
           {data.rows.length === 0 && (
             <p className="text-white/15 text-xs">No matching entities.</p>
           )}
-          {data.rows.map((row) => (
+          {data.rows.map((row: any) => (
             <div key={`${row.entity}-${row.type}`} className="bg-white/5 border border-white/10 rounded-lg p-3 hover:border-white/20 transition-colors">
               <div className="flex justify-between items-start mb-2">
                  <p className={`${isFullPage ? 'text-sm' : 'text-xs'} text-emerald-300 font-medium`}>{row.entity}</p>
@@ -110,7 +110,7 @@ export default function KnowledgeGraphPanel({ token, isFullPage = false }: Knowl
               
               {row.relationships?.length > 0 && (
                 <div className="mt-2 space-y-1.5">
-                  {row.relationships.map((r, i) => (
+                  {row.relationships.map((r: any, i: number) => (
                       <p key={i} className="text-[11px] text-white/60 flex items-center gap-1.5">
                         <span className="w-1 h-1 rounded-full bg-emerald-500/50"></span>
                         <span className="text-white/30 italic">{r.relation}</span> 
@@ -135,7 +135,7 @@ export default function KnowledgeGraphPanel({ token, isFullPage = false }: Knowl
             
             {data?.entities?.length ? (
               <div className={isFullPage ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 auto-rows-min" : "space-y-1.5"}>
-                {(isFullPage ? data.entities : data.entities.slice(0, 8)).map((e) => (
+                {(isFullPage ? data.entities : data.entities.slice(0, 8)).map((e: any) => (
                   <div key={`${e.name}-${e.type}`} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg px-3 py-2 hover:bg-white/10 transition-colors group cursor-default">
                     <span className="text-xs text-white/90 truncate font-medium max-w-[70%]" title={e.name}>{e.name}</span>
                     <span className="text-[10px] text-emerald-400/50 group-hover:text-emerald-400 transition-colors bg-emerald-400/5 px-1.5 py-0.5 rounded">{e.type}</span>
@@ -155,7 +155,7 @@ export default function KnowledgeGraphPanel({ token, isFullPage = false }: Knowl
 
             {data?.relations?.length ? (
               <div className={isFullPage ? "grid grid-cols-1 gap-2 auto-rows-min" : "space-y-1.5"}>
-                {(isFullPage ? data.relations : data.relations.slice(0, 8)).map((r, idx) => (
+                {(isFullPage ? data.relations : data.relations.slice(0, 8)).map((r: any, idx: number) => (
                   <div key={`${r.source}-${r.relation}-${r.target}-${idx}`} className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 flex items-center gap-3 hover:border-white/20 transition-colors group">
                     <div className="flex-1 min-w-0 flex items-center gap-2 justify-end text-right">
                          <span className="text-xs text-emerald-200/90 truncate" title={r.source}>{r.source}</span>

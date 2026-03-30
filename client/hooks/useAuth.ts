@@ -1,24 +1,26 @@
-"use client";
-import { useState, useCallback, useEffect } from "react";
+﻿"use client";
+import { useCallback, useEffect } from "react";
 import { AuthUser } from "@/lib/types";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setUser, setLoading, setError, logout as logoutAction } from "@/store/slices/authSlice";
 
 const AI_ENGINE_URL = process.env.NEXT_PUBLIC_AI_ENGINE_URL || "http://localhost:8000";
 const TOKEN_KEY = "omni_token";
 
 export function useAuth() {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const dispatch = useAppDispatch();
+  const { user, loading, error } = useAppSelector((state) => state.auth);
 
-  // Read localStorage only on client after mount
   useEffect(() => {
-    const raw = localStorage.getItem(TOKEN_KEY);
-    if (raw) setUser(JSON.parse(raw));
-  }, []);
+    if (!user) {
+      const raw = localStorage.getItem(TOKEN_KEY);
+      if (raw) dispatch(setUser(JSON.parse(raw)));
+    }
+  }, [user, dispatch]);
 
   const _request = async (path: string, email: string, password: string) => {
-    setLoading(true);
-    setError(null);
+    dispatch(setLoading(true));
+    dispatch(setError(null));
     try {
       const res = await fetch(`${AI_ENGINE_URL}${path}`, {
         method: "POST",
@@ -29,27 +31,27 @@ export function useAuth() {
       if (!res.ok) throw new Error(data.detail || "Auth failed");
       const authUser: AuthUser = { email: data.email, token: data.token };
       localStorage.setItem(TOKEN_KEY, JSON.stringify(authUser));
-      setUser(authUser);
+      dispatch(setUser(authUser));
       return authUser;
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Auth failed";
-      setError(msg);
+      dispatch(setError(msg));
       return null;
     } finally {
-      setLoading(false);
+      dispatch(setLoading(false));
     }
   };
 
   const login = useCallback((email: string, password: string) =>
-    _request("/auth/login", email, password), []);
+    _request("/auth/login", email, password), [dispatch]);
 
   const register = useCallback((email: string, password: string) =>
-    _request("/auth/register", email, password), []);
+    _request("/auth/register", email, password), [dispatch]);
 
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
-    setUser(null);
-  }, []);
+    dispatch(logoutAction());
+  }, [dispatch]);
 
   return { user, loading, error, login, register, logout };
 }

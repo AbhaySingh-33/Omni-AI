@@ -1,5 +1,7 @@
-"use client";
-import { useCallback, useEffect, useState } from "react";
+﻿"use client";
+import { useCallback, useEffect } from "react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setKgData, setKgLoading, setKgError } from "@/store/slices/kgSlice";
 
 const AI_ENGINE_URL = process.env.NEXT_PUBLIC_AI_ENGINE_URL || "http://localhost:8000";
 
@@ -18,37 +20,36 @@ export interface KGRelation {
   updated_at?: number;
 }
 
-interface KGSearchRow {
+export interface KGSearchRow {
   entity: string;
   type: string;
   relationships: { relation: string; target: string }[];
 }
 
-interface KGOverview {
+export interface KGOverview {
   mode: "overview";
   entities: KGEntity[];
   relations: KGRelation[];
 }
 
-interface KGSearch {
+export interface KGSearch {
   mode: "search";
   query: string;
   rows: KGSearchRow[];
 }
 
-interface KGDocument {
+export interface KGDocument {
   mode: "document";
   doc_id: string;
   entities: KGEntity[];
   relations: KGRelation[];
 }
 
-type KGResponse = KGOverview | KGSearch | KGDocument;
+export type KGResponse = KGOverview | KGSearch | KGDocument;
 
 export function useKnowledgeGraph(token: string | null) {
-  const [data, setData] = useState<KGResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+  const { data, loading, error } = useAppSelector((state) => state.kg);
 
   const authHeaders: Record<string, string> = {
     "Content-Type": "application/json",
@@ -57,8 +58,8 @@ export function useKnowledgeGraph(token: string | null) {
 
   const fetchKG = useCallback(async (params: { q?: string; limit?: number; docId?: string } = {}) => {
     if (!token) return;
-    setLoading(true);
-    setError(null);
+    dispatch(setKgLoading(true));
+    dispatch(setKgError(null));
     try {
       const search = new URLSearchParams();
       if (params.q) search.set("q", params.q);
@@ -70,14 +71,14 @@ export function useKnowledgeGraph(token: string | null) {
       });
       if (!res.ok) throw new Error(`KG fetch failed: ${res.status}`);
       const json = (await res.json()) as KGResponse;
-      setData(json);
+      dispatch(setKgData(json));
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to load KG";
-      setError(msg);
+      dispatch(setKgError(msg));
     } finally {
-      setLoading(false);
+      dispatch(setKgLoading(false));
     }
-  }, [token]);
+  }, [token, dispatch]);
 
   useEffect(() => {
     if (!token) return;

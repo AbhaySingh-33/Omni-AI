@@ -1,16 +1,17 @@
 "use client";
 import { useState, useCallback, useEffect } from "react";
 
+export type { DocInfo } from '@/store/slices/docsSlice';
 const AI_ENGINE_URL = process.env.NEXT_PUBLIC_AI_ENGINE_URL || "http://localhost:8000";
 
-export interface DocInfo {
+interface _DocInfo {
   doc_id: string;
   filename: string;
   chunks: number;
 }
 
 export function useDocuments(token: string | null, refreshTrigger: number) {
-  const [docs, setDocs] = useState<DocInfo[]>([]);
+  const [docs, setDocs] = useState<_DocInfo[]>([]);
   const [totalChunks, setTotalChunks] = useState(0);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);

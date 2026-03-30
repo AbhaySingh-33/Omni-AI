@@ -1,14 +1,14 @@
-"use client";
-import { useState, useCallback, useEffect } from "react";
+﻿"use client";
+import { useCallback, useEffect } from "react";
 import { Message } from "@/lib/types";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setMessages, addMessage, setChatLoading, setHistoryLoading, setChatError, clearMessages as clearMessagesAction } from "@/store/slices/chatSlice";
 
 const AI_ENGINE_URL = process.env.NEXT_PUBLIC_AI_ENGINE_URL || "http://localhost:8000";
 
 export function useChat(token: string | null) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [historyLoading, setHistoryLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+  const { messages, loading, historyLoading, error } = useAppSelector((state) => state.chat);
 
   const authHeaders: Record<string, string> = {
     "Content-Type": "application/json",
@@ -16,14 +16,16 @@ export function useChat(token: string | null) {
   };
 
   useEffect(() => {
-    if (!token) { setHistoryLoading(false); return; }
+    if (!token) { dispatch(setHistoryLoading(false)); return; }
+    if (messages.length > 0) { dispatch(setHistoryLoading(false)); return; } // avoid reload if persisted
+
     const loadHistory = async () => {
       try {
         const res = await fetch(`${AI_ENGINE_URL}/history`, { headers: { Authorization: `Bearer ${token}` } });
         if (!res.ok) return;
         const data = await res.json();
         const loaded: Message[] = (data.messages ?? []).map(
-          (m: { role: "user" | "assistant"; content: string }, i: number) => ({
+          (m: { role: "user" | "assistant"; content: string }, i: number) => ({ 
             id: `history-${i}`,
             role: m.role,
             content: m.content,
@@ -31,23 +33,23 @@ export function useChat(token: string | null) {
             fromHistory: true,
           })
         );
-        setMessages(loaded);
+        dispatch(setMessages(loaded));
       } catch {
         // silently fail
       } finally {
-        setHistoryLoading(false);
+        dispatch(setHistoryLoading(false));
       }
     };
     loadHistory();
-  }, [token]);
+  }, [token, dispatch, messages.length]);
 
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim()) return;
 
     const userMsg: Message = { id: crypto.randomUUID(), role: "user", content, timestamp: new Date() };
-    setMessages((prev) => [...prev, userMsg]);
-    setLoading(true);
-    setError(null);
+    dispatch(addMessage(userMsg));
+    dispatch(setChatLoading(true));
+    dispatch(setChatError(null));
 
     try {
       const res = await fetch(`${AI_ENGINE_URL}/chat`, {
@@ -57,23 +59,23 @@ export function useChat(token: string | null) {
       });
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       const data = await res.json();
-      setMessages((prev) => [...prev, {
+      dispatch(addMessage({
         id: crypto.randomUUID(),
         role: "assistant",
         content: data.response,
         timestamp: new Date(),
         agent: data.agent ?? undefined,
-      }]);
+      }));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Something went wrong";
-      setError(msg);
-      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "assistant", content: `⚠️ ${msg}`, timestamp: new Date() }]);
+      const msg = err instanceof Error ? err.message : "Something went wrong";  
+      dispatch(setChatError(msg));
+      dispatch(addMessage({ id: crypto.randomUUID(), role: "assistant", content: `\u26a0\ufe0f ${msg}`, timestamp: new Date() }));
     } finally {
-      setLoading(false);
+      dispatch(setChatLoading(false));
     }
-  }, [token]);
+  }, [token, dispatch]);
 
-  const clearMessages = useCallback(() => setMessages([]), []);
+  const clearMessages = useCallback(() => dispatch(clearMessagesAction()), [dispatch]);
 
   return { messages, loading, historyLoading, error, sendMessage, clearMessages };
 }
