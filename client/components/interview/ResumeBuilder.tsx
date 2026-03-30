@@ -8,16 +8,24 @@ interface Props {
   token: string;
 }
 
+interface Analysis {
+  overall_score?: number;
+  ats_score?: number;
+  strengths?: string[];
+  improvements?: string[];
+  quick_wins?: string[];
+  raw_feedback?: string;
+}
+
 export default function ResumeBuilder({ token }: Props) {
   const { resume, loading, saveResume, generateResume, analyzeResume } = useResume(token);
   const [mode, setMode] = useState<"view" | "edit" | "generate" | "analyze">("view");
   const [resumeContent, setResumeContent] = useState("");
   const [targetJob, setTargetJob] = useState("");
-  const [analysis, setAnalysis] = useState<Record<string, unknown> | null>(null);
+  const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [generating, setGenerating] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
-  // Form state for resume generation
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -62,11 +70,10 @@ export default function ResumeBuilder({ token }: Props) {
   const handleAnalyze = async () => {
     const content = resumeContent || resume?.content;
     if (!content) return;
-
     setGenerating(true);
     const result = await analyzeResume(content, targetJob);
     if (result?.analysis) {
-      setAnalysis(result.analysis);
+      setAnalysis(result.analysis as Analysis);
       setMode("analyze");
     }
     setGenerating(false);
@@ -76,17 +83,13 @@ export default function ResumeBuilder({ token }: Props) {
     setDownloading(true);
     try {
       const response = await fetch(`${AI_ENGINE_URL}/interview/resume/pdf`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
       if (!response.ok) {
         const error = await response.json();
         alert(error.detail || "Failed to download PDF");
         return;
       }
-
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -166,20 +169,15 @@ export default function ResumeBuilder({ token }: Props) {
                   Last updated: {new Date(resume.updated_at).toLocaleDateString()}
                 </p>
                 <button
-                  onClick={() => {
-                    setResumeContent(resume.content);
-                    setMode("edit");
-                  }}
+                  onClick={() => { setResumeContent(resume.content); setMode("edit"); }}
                   className="text-sm text-purple-400 hover:text-purple-300"
                 >
                   ✏️ Edit
                 </button>
               </div>
-              <div className="prose prose-invert max-w-none">
-                <pre className="whitespace-pre-wrap text-white/80 font-sans text-sm leading-relaxed">
-                  {resume.content}
-                </pre>
-              </div>
+              <pre className="whitespace-pre-wrap text-white/80 font-sans text-sm leading-relaxed">
+                {resume.content}
+              </pre>
             </>
           ) : (
             <div className="text-center py-12">
@@ -245,127 +243,45 @@ export default function ResumeBuilder({ token }: Props) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-white/60 text-sm mb-2">Full Name *</label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white"
-              />
+              <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white" />
             </div>
             <div>
               <label className="block text-white/60 text-sm mb-2">Email *</label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white"
-              />
+              <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white" />
             </div>
             <div>
               <label className="block text-white/60 text-sm mb-2">Phone</label>
-              <input
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white"
-              />
+              <input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white" />
             </div>
             <div>
               <label className="block text-white/60 text-sm mb-2">LinkedIn URL</label>
-              <input
-                type="url"
-                value={formData.linkedin}
-                onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white"
-              />
+              <input type="url" value={formData.linkedin} onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white" />
             </div>
           </div>
-
           <div>
             <label className="block text-white/60 text-sm mb-2">Target Job Title</label>
-            <input
-              type="text"
-              value={formData.job_title}
-              onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
-              placeholder="e.g., Senior Frontend Developer"
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white"
-            />
+            <input type="text" value={formData.job_title} onChange={(e) => setFormData({ ...formData, job_title: e.target.value })} placeholder="e.g., Senior Frontend Developer" className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white" />
           </div>
-
           <div>
             <label className="block text-white/60 text-sm mb-2">Professional Summary</label>
-            <textarea
-              value={formData.summary}
-              onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-              rows={3}
-              placeholder="Brief overview of your professional background and goals..."
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white resize-none"
-            />
+            <textarea value={formData.summary} onChange={(e) => setFormData({ ...formData, summary: e.target.value })} rows={3} placeholder="Brief overview of your professional background and goals..." className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white resize-none" />
           </div>
 
           {/* Experience */}
           <div>
             <div className="flex justify-between items-center mb-3">
               <label className="text-white/60 text-sm">Work Experience</label>
-              <button onClick={addExperience} className="text-purple-400 text-sm hover:text-purple-300">
-                + Add Experience
-              </button>
+              <button onClick={addExperience} className="text-purple-400 text-sm hover:text-purple-300">+ Add Experience</button>
             </div>
             {experiences.map((exp, idx) => (
               <div key={idx} className="bg-white/5 rounded-lg p-4 mb-3 space-y-3">
                 <div className="grid grid-cols-2 gap-3">
-                  <input
-                    placeholder="Company"
-                    value={exp.company}
-                    onChange={(e) => {
-                      const updated = [...experiences];
-                      updated[idx].company = e.target.value;
-                      setExperiences(updated);
-                    }}
-                    className="bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm"
-                  />
-                  <input
-                    placeholder="Job Title"
-                    value={exp.title}
-                    onChange={(e) => {
-                      const updated = [...experiences];
-                      updated[idx].title = e.target.value;
-                      setExperiences(updated);
-                    }}
-                    className="bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm"
-                  />
-                  <input
-                    placeholder="Start Date (e.g., Jan 2020)"
-                    value={exp.startDate}
-                    onChange={(e) => {
-                      const updated = [...experiences];
-                      updated[idx].startDate = e.target.value;
-                      setExperiences(updated);
-                    }}
-                    className="bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm"
-                  />
-                  <input
-                    placeholder="End Date (or Present)"
-                    value={exp.endDate}
-                    onChange={(e) => {
-                      const updated = [...experiences];
-                      updated[idx].endDate = e.target.value;
-                      setExperiences(updated);
-                    }}
-                    className="bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm"
-                  />
+                  <input placeholder="Company" value={exp.company} onChange={(e) => { const u = [...experiences]; u[idx].company = e.target.value; setExperiences(u); }} className="bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm" />
+                  <input placeholder="Job Title" value={exp.title} onChange={(e) => { const u = [...experiences]; u[idx].title = e.target.value; setExperiences(u); }} className="bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm" />
+                  <input placeholder="Start Date" value={exp.startDate} onChange={(e) => { const u = [...experiences]; u[idx].startDate = e.target.value; setExperiences(u); }} className="bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm" />
+                  <input placeholder="End Date (or Present)" value={exp.endDate} onChange={(e) => { const u = [...experiences]; u[idx].endDate = e.target.value; setExperiences(u); }} className="bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm" />
                 </div>
-                <textarea
-                  placeholder="Key responsibilities and achievements..."
-                  value={exp.description}
-                  onChange={(e) => {
-                    const updated = [...experiences];
-                    updated[idx].description = e.target.value;
-                    setExperiences(updated);
-                  }}
-                  rows={2}
-                  className="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm resize-none"
-                />
+                <textarea placeholder="Key responsibilities and achievements..." value={exp.description} onChange={(e) => { const u = [...experiences]; u[idx].description = e.target.value; setExperiences(u); }} rows={2} className="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm resize-none" />
               </div>
             ))}
           </div>
@@ -374,82 +290,27 @@ export default function ResumeBuilder({ token }: Props) {
           <div>
             <div className="flex justify-between items-center mb-3">
               <label className="text-white/60 text-sm">Education</label>
-              <button onClick={addEducation} className="text-purple-400 text-sm hover:text-purple-300">
-                + Add Education
-              </button>
+              <button onClick={addEducation} className="text-purple-400 text-sm hover:text-purple-300">+ Add Education</button>
             </div>
             {education.map((edu, idx) => (
               <div key={idx} className="bg-white/5 rounded-lg p-4 mb-3 grid grid-cols-2 gap-3">
-                <input
-                  placeholder="Institution"
-                  value={edu.institution}
-                  onChange={(e) => {
-                    const updated = [...education];
-                    updated[idx].institution = e.target.value;
-                    setEducation(updated);
-                  }}
-                  className="bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm"
-                />
-                <input
-                  placeholder="Degree"
-                  value={edu.degree}
-                  onChange={(e) => {
-                    const updated = [...education];
-                    updated[idx].degree = e.target.value;
-                    setEducation(updated);
-                  }}
-                  className="bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm"
-                />
-                <input
-                  placeholder="Field of Study"
-                  value={edu.field}
-                  onChange={(e) => {
-                    const updated = [...education];
-                    updated[idx].field = e.target.value;
-                    setEducation(updated);
-                  }}
-                  className="bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm"
-                />
-                <input
-                  placeholder="Graduation Date"
-                  value={edu.graduationDate}
-                  onChange={(e) => {
-                    const updated = [...education];
-                    updated[idx].graduationDate = e.target.value;
-                    setEducation(updated);
-                  }}
-                  className="bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm"
-                />
+                <input placeholder="Institution" value={edu.institution} onChange={(e) => { const u = [...education]; u[idx].institution = e.target.value; setEducation(u); }} className="bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm" />
+                <input placeholder="Degree" value={edu.degree} onChange={(e) => { const u = [...education]; u[idx].degree = e.target.value; setEducation(u); }} className="bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm" />
+                <input placeholder="Field of Study" value={edu.field} onChange={(e) => { const u = [...education]; u[idx].field = e.target.value; setEducation(u); }} className="bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm" />
+                <input placeholder="Graduation Date" value={edu.graduationDate} onChange={(e) => { const u = [...education]; u[idx].graduationDate = e.target.value; setEducation(u); }} className="bg-white/5 border border-white/10 rounded px-3 py-2 text-white text-sm" />
               </div>
             ))}
           </div>
 
-          {/* Skills */}
           <div>
             <label className="block text-white/60 text-sm mb-2">Skills (comma-separated)</label>
-            <input
-              type="text"
-              value={formData.skills}
-              onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
-              placeholder="JavaScript, React, Node.js, Python, SQL..."
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white"
-            />
+            <input type="text" value={formData.skills} onChange={(e) => setFormData({ ...formData, skills: e.target.value })} placeholder="JavaScript, React, Node.js, Python, SQL..." className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white" />
           </div>
-
           <div className="flex gap-3">
-            <button
-              onClick={handleGenerate}
-              disabled={generating || !formData.name || !formData.email}
-              className="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm font-medium hover:bg-purple-600 transition-colors disabled:opacity-50"
-            >
+            <button onClick={handleGenerate} disabled={generating || !formData.name || !formData.email} className="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm font-medium hover:bg-purple-600 transition-colors disabled:opacity-50">
               {generating ? "Generating..." : "✨ Generate Resume"}
             </button>
-            <button
-              onClick={() => setMode("view")}
-              className="px-4 py-2 bg-white/10 text-white rounded-lg text-sm font-medium hover:bg-white/20 transition-colors"
-            >
-              Cancel
-            </button>
+            <button onClick={() => setMode("view")} className="px-4 py-2 bg-white/10 text-white rounded-lg text-sm font-medium hover:bg-white/20 transition-colors">Cancel</button>
           </div>
         </div>
       )}
@@ -459,78 +320,56 @@ export default function ResumeBuilder({ token }: Props) {
         <div className="bg-[#111] border border-white/10 rounded-xl p-6 space-y-6">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold text-white">📊 Resume Analysis</h3>
-            <button
-              onClick={() => setMode("view")}
-              className="text-white/50 hover:text-white text-sm"
-            >
-              ← Back to Resume
-            </button>
+            <button onClick={() => setMode("view")} className="text-white/50 hover:text-white text-sm">← Back to Resume</button>
           </div>
 
-          {/* Scores */}
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-center">
-              <p className="text-3xl font-bold text-blue-400">
-                {(analysis.overall_score as number) || "N/A"}/10
-              </p>
+              <p className="text-3xl font-bold text-blue-400">{analysis.overall_score ?? "N/A"}/10</p>
               <p className="text-white/50 text-sm">Overall Score</p>
             </div>
             <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4 text-center">
-              <p className="text-3xl font-bold text-purple-400">
-                {(analysis.ats_score as number) || "N/A"}/10
-              </p>
+              <p className="text-3xl font-bold text-purple-400">{analysis.ats_score ?? "N/A"}/10</p>
               <p className="text-white/50 text-sm">ATS Score</p>
             </div>
           </div>
 
-          {/* Strengths */}
-          {Array.isArray(analysis.strengths) && analysis.strengths.length > 0 && (
+          {analysis.strengths && analysis.strengths.length > 0 && (
             <div>
               <h4 className="text-white font-medium mb-2">✅ Strengths</h4>
               <ul className="space-y-2">
-                {(analysis.strengths as string[]).map((s, i) => (
-                  <li key={i} className="text-white/70 text-sm flex items-start gap-2">
-                    <span className="text-green-400">•</span> {s}
-                  </li>
+                {analysis.strengths.map((s, i) => (
+                  <li key={i} className="text-white/70 text-sm flex items-start gap-2"><span className="text-green-400">•</span> {s}</li>
                 ))}
               </ul>
             </div>
           )}
 
-          {/* Improvements */}
-          {Array.isArray(analysis.improvements) && analysis.improvements.length > 0 && (
+          {analysis.improvements && analysis.improvements.length > 0 && (
             <div>
               <h4 className="text-white font-medium mb-2">📝 Areas for Improvement</h4>
               <ul className="space-y-2">
-                {(analysis.improvements as string[]).map((s, i) => (
-                  <li key={i} className="text-white/70 text-sm flex items-start gap-2">
-                    <span className="text-amber-400">•</span> {s}
-                  </li>
+                {analysis.improvements.map((s, i) => (
+                  <li key={i} className="text-white/70 text-sm flex items-start gap-2"><span className="text-amber-400">•</span> {s}</li>
                 ))}
               </ul>
             </div>
           )}
 
-          {/* Quick Wins */}
-          {Array.isArray(analysis.quick_wins) && analysis.quick_wins.length > 0 && (
+          {analysis.quick_wins && analysis.quick_wins.length > 0 && (
             <div>
               <h4 className="text-white font-medium mb-2">⚡ Quick Wins</h4>
               <ul className="space-y-2">
-                {(analysis.quick_wins as string[]).map((s, i) => (
-                  <li key={i} className="text-white/70 text-sm flex items-start gap-2">
-                    <span className="text-purple-400">•</span> {s}
-                  </li>
+                {analysis.quick_wins.map((s, i) => (
+                  <li key={i} className="text-white/70 text-sm flex items-start gap-2"><span className="text-purple-400">•</span> {s}</li>
                 ))}
               </ul>
             </div>
           )}
 
-          {/* Raw feedback fallback */}
           {analysis.raw_feedback && (
             <div className="bg-white/5 rounded-lg p-4">
-              <pre className="whitespace-pre-wrap text-white/70 text-sm">
-                {analysis.raw_feedback as string}
-              </pre>
+              <pre className="whitespace-pre-wrap text-white/70 text-sm">{analysis.raw_feedback}</pre>
             </div>
           )}
         </div>
