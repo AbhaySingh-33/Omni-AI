@@ -18,6 +18,8 @@ const persistConfig = {
   key: 'root',
   storage,
   whitelist: ['auth', 'chat', 'docs', 'kg'], // persist these reducers
+  serialize: true, // Ensure serialization
+  deserialize: true, // Ensure deserialization
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

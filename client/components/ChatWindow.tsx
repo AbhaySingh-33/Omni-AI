@@ -4,12 +4,13 @@ import { Message } from "@/lib/types";
 
 const AI_ENGINE_URL = process.env.NEXT_PUBLIC_AI_ENGINE_URL || "http://localhost:8000";
 
-function Timestamp({ date }: { date: Date }) {
+function Timestamp({ date }: { date: Date | string }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
   return (
     <p className="text-white/20 text-xs">
-      {mounted ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
+      {mounted ? dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
     </p>
   );
 }

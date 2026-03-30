@@ -61,6 +61,19 @@ export function useKnowledgeGraph(token: string | null) {
     dispatch(setKgLoading(true));
     dispatch(setKgError(null));
     try {
+      // If there are no ingested documents, clear stale persisted KG state.
+      const docsRes = await fetch(`${AI_ENGINE_URL}/documents`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (docsRes.ok) {
+        const docsJson = await docsRes.json();
+        const docs = docsJson?.documents ?? [];
+        if (!Array.isArray(docs) || docs.length === 0) {
+          dispatch(setKgData(null));
+          return;
+        }
+      }
+
       const search = new URLSearchParams();
       if (params.q) search.set("q", params.q);
       if (params.docId) search.set("doc_id", params.docId);
@@ -83,6 +96,19 @@ export function useKnowledgeGraph(token: string | null) {
   useEffect(() => {
     if (!token) return;
     fetchKG();
+  }, [token, fetchKG]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    const handleDocumentsChanged = () => {
+      fetchKG();
+    };
+
+    window.addEventListener("omni:documents:changed", handleDocumentsChanged);
+    return () => {
+      window.removeEventListener("omni:documents:changed", handleDocumentsChanged);
+    };
   }, [token, fetchKG]);
 
   return { data, loading, error, refresh: fetchKG };

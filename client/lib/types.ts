@@ -4,7 +4,7 @@ export interface Message {
   id: string;
   role: Role;
   content: string;
-  timestamp: Date;
+  timestamp: string; // ISO string for Redux serialization
   agent?: AgentType;
 }
 
@@ -77,7 +77,7 @@ export interface InterviewMessage {
   role: "interviewer" | "candidate";
   content: string;
   question_number?: number;
-  created_at: string;
+  created_at: string; // Already ISO string
 }
 
 export interface InterviewFeedback {

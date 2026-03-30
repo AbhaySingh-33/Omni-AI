@@ -1,6 +1,12 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { Message } from '@/lib/types';
 
+// Helper to ensure timestamps are ISO strings
+const normalizeMessage = (msg: any): Message => ({
+  ...msg,
+  timestamp: typeof msg.timestamp === 'string' ? msg.timestamp : new Date(msg.timestamp).toISOString(),
+});
+
 interface ChatState {
   messages: Message[];
   loading: boolean;
@@ -20,10 +26,10 @@ export const chatSlice = createSlice({
   initialState,
   reducers: {
     setMessages: (state, action: PayloadAction<Message[]>) => {
-      state.messages = action.payload;
+      state.messages = action.payload.map(normalizeMessage);
     },
     addMessage: (state, action: PayloadAction<Message>) => {
-      state.messages.push(action.payload);
+      state.messages.push(normalizeMessage(action.payload));
     },
     setChatLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;

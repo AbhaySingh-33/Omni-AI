@@ -47,6 +47,7 @@ export function useDocuments(token: string | null, refreshTrigger: number) {
         const removed = docs.find((d) => d.doc_id === doc_id)?.chunks ?? 0;
         return Math.max(0, prev - removed);
       });
+      window.dispatchEvent(new CustomEvent("omni:documents:changed", { detail: { type: "deleted", doc_id } }));
     } finally {
       setDeleting(null);
     }

@@ -29,7 +29,7 @@ export function useChat(token: string | null) {
             id: `history-${i}`,
             role: m.role,
             content: m.content,
-            timestamp: new Date(),
+            timestamp: new Date().toISOString(),
             fromHistory: true,
           })
         );
@@ -46,7 +46,7 @@ export function useChat(token: string | null) {
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim()) return;
 
-    const userMsg: Message = { id: crypto.randomUUID(), role: "user", content, timestamp: new Date() };
+    const userMsg: Message = { id: crypto.randomUUID(), role: "user", content, timestamp: new Date().toISOString() };
     dispatch(addMessage(userMsg));
     dispatch(setChatLoading(true));
     dispatch(setChatError(null));
@@ -63,13 +63,13 @@ export function useChat(token: string | null) {
         id: crypto.randomUUID(),
         role: "assistant",
         content: data.response,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
         agent: data.agent ?? undefined,
       }));
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Something went wrong";  
       dispatch(setChatError(msg));
-      dispatch(addMessage({ id: crypto.randomUUID(), role: "assistant", content: `\u26a0\ufe0f ${msg}`, timestamp: new Date() }));
+      dispatch(addMessage({ id: crypto.randomUUID(), role: "assistant", content: `⚠️ ${msg}`, timestamp: new Date().toISOString() }));
     } finally {
       dispatch(setChatLoading(false));
     }
