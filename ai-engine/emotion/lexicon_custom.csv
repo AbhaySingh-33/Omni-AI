@@ -1,0 +1,147 @@
+keyword,emotion,weight
+acceptable,joy,0.85
+afraid to go outside,fear,0.85
+amused,joy,0.85
+angered,anger,0.85
+appalled,anger,0.85
+artistic,joy,0.85
+assaulted,fear,0.85
+attacked,fear,0.85
+avoiding everyone,sadness,0.8
+award,joy,0.85
+bashful,fear,0.85
+beloved,joy,0.85
+bitchy,anger,0.85
+bitten,fear,0.85
+bothered,anger,0.85
+brave,joy,0.85
+can't cope anymore,stress,0.9
+can't focus on work,stress,0.7
+can't leave the house,fear,0.85
+can't sleep at night,anxiety,0.75
+carefree,joy,0.85
+considering therapy,anxiety,0.6
+contented,joy,0.85
+cranky,anger,0.85
+cutting off friends,sadness,0.85
+dangerous,anger,0.85
+despised,anger,0.85
+determined,joy,0.85
+difficulty coping,stress,0.8
+dissatisfied,anger,0.85
+distracted,anger,0.85
+distraught,fear,0.85
+distressed,fear,0.85
+divine,joy,0.85
+don't want to see anyone,sadness,0.8
+dreading going to work,anxiety,0.75
+eating too much,stress,0.65
+emotional rollercoaster,anxiety,0.75
+emotions all over,anxiety,0.7
+envious,anger,0.85
+expectations,fear,0.85
+faithful,joy,0.85
+family history of depression,sadness,0.65
+fearful,fear,0.85
+frantic,fear,0.85
+fucked,anger,0.85
+generous,joy,0.85
+gracious,joy,0.85
+greedy,anger,0.85
+grouchy,anger,0.85
+growing stress,stress,0.75
+grumpy,anger,0.85
+hated,anger,0.85
+hateful,anger,0.85
+haven't gone outside,sadness,0.8
+haven't left my room,sadness,0.85
+heartless,anger,0.85
+hesitant,fear,0.85
+impatient,anger,0.85
+increasing stress,stress,0.75
+indecisive,fear,0.85
+inhibited,fear,0.85
+insincere,anger,0.85
+insulted,anger,0.85
+intimidated,fear,0.85
+invigorated,joy,0.85
+irritable,anger,0.85
+isolating myself,sadness,0.85
+jealous,anger,0.85
+jolly,joy,0.85
+locked myself in,sadness,0.85
+lost interest in work,sadness,0.75
+lost my appetite,sadness,0.75
+lost my coping,hopelessness,0.85
+mental illness runs in family,anxiety,0.65
+mood keeps changing,anxiety,0.7
+mood swings,anxiety,0.7
+more stressed each day,stress,0.85
+my parent was depressed,sadness,0.65
+nasty,anger,0.85
+nauseous,fear,0.85
+need medication,anxiety,0.7
+need professional help,stress,0.7
+neglecting hygiene,sadness,0.8
+neurotic,fear,0.85
+no motivation to work,sadness,0.8
+no way to cope,hopelessness,0.9
+nonsense,anger,0.85
+not eating properly,sadness,0.7
+obnoxious,anger,0.85
+offended,anger,0.85
+petrified,fear,0.85
+petty,anger,0.85
+pissed,anger,0.85
+pleased,joy,0.85
+popular,joy,0.85
+precious,joy,0.85
+productive,joy,0.85
+rebellious,anger,0.85
+relaxed,joy,0.85
+reluctant,fear,0.85
+rude,anger,0.85
+rushed,anger,0.85
+sarcastic,anger,0.85
+selfish,anger,0.85
+shaken,fear,0.85
+shaky,fear,0.85
+should see a therapist,anxiety,0.65
+shy,fear,0.85
+sincere,joy,0.85
+skeptical,fear,0.85
+sleeping all day,sadness,0.75
+sociable,joy,0.85
+social withdrawal,sadness,0.75
+staying indoors,sadness,0.7
+stopped exercising,sadness,0.7
+stopped socializing,sadness,0.8
+stopped taking care,sadness,0.8
+strange,fear,0.85
+stress getting worse,stress,0.85
+stress keeps growing,stress,0.85
+struggling to cope,stress,0.8
+stubborn,anger,0.85
+successful,joy,0.85
+superior,joy,0.85
+suspicious,fear,0.85
+talented,joy,0.85
+terrific,joy,0.85
+timid,fear,0.85
+trauma,fear,0.85
+triumphant,joy,0.85
+trusting,joy,0.85
+uncomfortable,fear,0.85
+unprotected,fear,0.85
+unsure,fear,0.85
+unwanted,anger,0.85
+up and down emotionally,anxiety,0.7
+uptight,fear,0.85
+violent,anger,0.85
+virtuous,joy,0.85
+vital,joy,0.85
+weird,fear,0.85
+wimpy,fear,0.85
+withdrawing from people,sadness,0.8
+work feels pointless,hopelessness,0.8
+wronged,anger,0.85

@@ -1,11 +1,18 @@
 export type Role = "user" | "assistant";
 
+export interface EmotionData {
+  detected: string;
+  intensity: string;
+  risk_level: string;
+}
+
 export interface Message {
   id: string;
   role: Role;
   content: string;
   timestamp: string; // ISO string for Redux serialization
   agent?: AgentType;
+  emotion?: EmotionData;
 }
 
 export type AgentType = "reasoning" | "research" | "tools" | "memory" | "router" | "interview";

@@ -12,11 +12,13 @@ nest_asyncio.apply()
 pending_confirmations: dict = {}
 
 def _run_tool(tool: str, tool_input: str, extra: dict) -> str:
-    loop = asyncio.get_event_loop()
     try:
-        return loop.run_until_complete(call_mcp_tool(tool, tool_input, extra))
-    finally:
-        pass  # loop is shared/managed by nest_asyncio, do not close it
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        # Worker threads may not have an event loop.
+        return asyncio.run(call_mcp_tool(tool, tool_input, extra))
+
+    return loop.run_until_complete(call_mcp_tool(tool, tool_input, extra))
 
 def tool_agent(state):
     messages = state["messages"]

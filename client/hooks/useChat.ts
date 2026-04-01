@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useCallback, useEffect } from "react";
 import { Message } from "@/lib/types";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -101,6 +101,7 @@ export function useChat(token: string | null) {
         content: data.response,
         timestamp: new Date().toISOString(),
         agent: normalizeAgent(data.agent),
+        emotion: data.emotion || undefined,
       }));
     } catch (err) {
       const msg = toUserFacingError(err);

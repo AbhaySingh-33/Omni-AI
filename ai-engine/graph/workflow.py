@@ -1,5 +1,5 @@
 from langgraph.graph import StateGraph, START, END
-from typing import TypedDict, Annotated
+from typing import TypedDict, Annotated, Optional
 from langgraph.graph.message import add_messages
 import operator
 
@@ -17,6 +17,7 @@ class State(TypedDict):
     user_id: str
     iterations: Annotated[int, operator.add]
     agent_used: str
+    emotion_context: Optional[dict]
 
 
 def route_decision(state):

@@ -143,20 +143,47 @@ function AssistantMessage({ message }: { message: Message }) {
   };
   const meta = message.agent ? agentMeta[message.agent] : null;
 
+  const emotionEmoji: Record<string, string> = {
+    joy: "😊", sadness: "😢", anger: "😠", fear: "😨",
+    anxiety: "😰", stress: "😫", self_doubt: "😔", hopelessness: "🥀",
+  };
+
+  const emotionColor: Record<string, string> = {
+    joy: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+    sadness: "text-blue-400 bg-blue-500/10 border-blue-500/20",
+    anger: "text-red-400 bg-red-500/10 border-red-500/20",
+    fear: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20",
+    anxiety: "text-orange-400 bg-orange-500/10 border-orange-500/20",
+    stress: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+    self_doubt: "text-indigo-400 bg-indigo-500/10 border-indigo-500/20",
+    hopelessness: "text-rose-400 bg-rose-500/10 border-rose-500/20",
+  };
+
   return (
     <div className="flex gap-3 group">
       <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500/20 to-blue-500/20 border border-white/10 flex items-center justify-center text-sm flex-shrink-0 mt-1">
         ✦
       </div>
       <div className="flex-1 min-w-0">
-        {meta && (
-          <div className="flex items-center gap-1.5 mb-1.5">
+        <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+          {meta && (
             <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium ${meta.color}`}>
               <span>{meta.icon}</span>
               <span>{meta.label} Agent</span>
             </span>
-          </div>
-        )}
+          )}
+          {message.emotion && emotionEmoji[message.emotion.detected] && (
+            <span
+              className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium ${
+                emotionColor[message.emotion.detected] || "text-white/40 bg-white/5 border-white/10"
+              }`}
+              title={`Detected: ${message.emotion.detected} (${message.emotion.intensity})`}
+            >
+              <span>{emotionEmoji[message.emotion.detected]}</span>
+              <span className="capitalize">{message.emotion.detected.replace("_", " ")}</span>
+            </span>
+          )}
+        </div>
         <div className="bg-white/5 border border-white/8 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-white/85 leading-relaxed">
           <div dangerouslySetInnerHTML={{ __html: formatContent(message.content) }} />
         </div>

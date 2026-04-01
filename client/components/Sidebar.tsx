@@ -44,10 +44,10 @@ export default function Sidebar({ isOpen, onClose, uploadCount, token }: Sidebar
   const { docs, totalChunks, loading, deleting, deleteDoc } = useDocuments(token, uploadCount);
   const pathname = usePathname();
 
-  // pathname check for active link state
   const isChatActive = pathname === "/" || pathname === "";
   const isKgActive = pathname?.startsWith("/kg");
   const isInterviewActive = pathname?.startsWith("/interview");
+  const isMoodActive = pathname?.startsWith("/mood");
 
   return (
     <>
@@ -120,6 +120,17 @@ export default function Sidebar({ isOpen, onClose, uploadCount, token }: Sidebar
                     <span className="text-lg opacity-80">🕸️</span>
                     Knowledge Graph
                 </Link>
+                <Link
+                    href="/mood"
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isMoodActive
+                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                        : "text-white/50 hover:text-white hover:bg-white/5"
+                    }`}
+                >
+                    <span className="text-lg opacity-80">📈</span>
+                    Mood Tracker
+                </Link>
             </div>
         </div>
 
@@ -143,8 +154,6 @@ export default function Sidebar({ isOpen, onClose, uploadCount, token }: Sidebar
             </div>
           ))}
         </div>
-
-        {/* Removed KnowledgeGraphPanel from here */}
 
         <DocumentsPanel docs={docs} totalChunks={totalChunks} loading={loading} deleting={deleting} onDelete={deleteDoc} />
 

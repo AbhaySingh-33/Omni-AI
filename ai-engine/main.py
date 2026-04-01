@@ -11,6 +11,7 @@ from routes.system import router as system_router
 from routes.tts import router as tts_router
 from routes.kg import router as kg_router
 from routes.interview import router as interview_router
+from routes.emotion import router as emotion_router
 
 app = FastAPI()
 
@@ -28,6 +29,7 @@ app.include_router(tts_router)
 app.include_router(system_router)
 app.include_router(kg_router)
 app.include_router(interview_router)
+app.include_router(emotion_router)
 
 
 @app.on_event("startup")
@@ -39,3 +41,11 @@ async def startup_event():
         print("Interview prep tables initialized")
     except Exception as e:
         print(f"Warning: Could not initialize interview tables: {e}")
+
+    try:
+        from emotion.emotion_store import init_emotion_tables
+        init_emotion_tables()
+        print("Emotion tracking tables initialized")
+    except Exception as e:
+        print(f"Warning: Could not initialize emotion tables: {e}")
+

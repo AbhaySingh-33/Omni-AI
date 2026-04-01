@@ -1,13 +1,18 @@
 from services.memory import get_history, get_summary
 from app.gemini import llm
+import concurrent.futures
 
 def memory_agent(state):
     messages = state["messages"]
     query = messages[-1].content
     user_id = state.get("user_id", "default_user")
 
-    summary = get_summary(user_id)
-    history = get_history(user_id)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        summary_future = executor.submit(get_summary, user_id)
+        history_future = executor.submit(get_history, user_id)
+        summary = summary_future.result()
+        history = history_future.result()
+
     history_text = "\n".join([f"User: {m}\nAI: {r}" for m, r in history])
 
     summary_section = f"Long-term memory summary:\n{summary}\n\n" if summary else ""

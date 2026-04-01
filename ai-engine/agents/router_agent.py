@@ -1,4 +1,3 @@
-from app.gemini import llm
 import re
 
 # Keywords that always need live web search regardless of LLM routing
@@ -25,10 +24,35 @@ INTERVIEW_KEYWORDS = [
     "interview prep", "interview tips", "improve resume", "create resume",
     "cover letter", "salary negotiation", "job hunt", "recruitment"
 ]
+
+# Keywords that indicate emotional/mental health content → route to reasoning (with emotion prompt)
+EMOTION_KEYWORDS = [
+    "feeling sad", "feeling down", "depressed", "depression", "anxious", "anxiety",
+    "stressed", "stress", "lonely", "alone", "scared", "afraid", "angry",
+    "frustrated", "hopeless", "worthless", "give up", "can't cope", "overwhelmed",
+    "burned out", "burnout", "crying", "panic", "self harm", "suicidal",
+    "no hope", "end it all", "don't want to live", "hate myself", "hurt myself",
+    "nobody cares", "feel empty", "numb", "broken", "miserable", "suffering",
+    "mental health", "therapy", "counseling", "i'm not okay", "struggling",
+    "can't take it", "falling apart", "losing it", "breaking down"
+]
+
 # Simple greetings and generic words that shouldn't require LLM routing
 GREETING_KEYWORDS = [
     "hi", "hello", "hey", "good morning", "good evening", "how are you", 
     "what's up", "who are you", "help"
+]
+
+# Keywords that should route to memory agent directly.
+MEMORY_KEYWORDS = [
+    "remember", "earlier", "previous", "before", "last time", "history",
+    "what did i say", "what did we talk", "from our conversation",
+]
+
+# Keywords that usually indicate tool action requests.
+TOOLS_KEYWORDS = [
+    "calculate", "calc", "search web", "google", "run command", "terminal",
+    "list files", "read file", "write file", "create file", "weather", "news",
 ]
 MAX_ITERATIONS = 5
 
@@ -56,6 +80,15 @@ def router_agent(state):
 
     # --- FIRST STEP LOGIC (User just spoke) ---
     if last_message.type == "human" and iterations == 0:
+        # PRIORITY: Crisis detected by emotion engine → immediate reasoning with crisis prompt
+        emotion_ctx = state.get("emotion_context")
+        if emotion_ctx and emotion_ctx.get("is_crisis"):
+            return {"next": "reasoning", "iterations": 1}
+
+        # Fast-path: emotional/mental health content → reasoning (emotion prompts activate)
+        if any(kw in last_content for kw in EMOTION_KEYWORDS):
+            return {"next": "reasoning", "iterations": 1}
+
         # Fast-path: documents -> research
         if any(kw in last_content for kw in RESEARCH_KEYWORDS):
             return {"next": "research", "iterations": 1}
@@ -72,25 +105,16 @@ def router_agent(state):
         if last_content in GREETING_KEYWORDS:
             return {"next": "reasoning", "iterations": 1}
 
-        # LLM Classification
-        prompt = f"""You are a router. Classify the user query into exactly one category.
+        # Fast-path: memory
+        if any(kw in last_content for kw in MEMORY_KEYWORDS):
+            return {"next": "memory", "iterations": 1}
 
-Categories:
-- memory    → asking about past conversations
-- reasoning → general knowledge, explanations, coding help
-- research  → questions about documents/files
-- tools     → actions (create/read/write/run), search, math
-- interview → job search, resume, interview prep, career advice, mock interviews
+        # Fast-path: tool requests
+        if any(kw in last_content for kw in TOOLS_KEYWORDS):
+            return {"next": "tools", "iterations": 1}
 
-Query: {last_content}
-
-Respond with ONLY one word: memory / reasoning / research / tools / interview"""
-
-        result = llm.invoke(prompt)
-        content = result.content.strip().lower()
-        match = re.search(r"\b(memory|reasoning|research|tools|interview)\b", content)
-        route = match.group(1) if match else "reasoning"
-        return {"next": route, "iterations": 1}
+        # Default route avoids an extra LLM classification hop.
+        return {"next": "reasoning", "iterations": 1}
 
     # --- SUPERVISOR LOGIC (Agent just spoke) ---
     # Retrieve the state to see which agent just answered
@@ -101,37 +125,9 @@ Respond with ONLY one word: memory / reasoning / research / tools / interview"""
     if agent_used in ("reasoning", "research", "memory", "interview"):
         return {"next": "finish", "iterations": 1}
 
-    # If the last step was effective (e.g. tool output), maybe we are done or need reasoning.
-    # We ask the LLM to decide.
+    # Tools agent already returns user-facing output (or explicit confirmation/cancel text).
+    # Finishing here avoids an extra supervisor LLM roundtrip.
+    if agent_used == "tools":
+        return {"next": "finish", "iterations": 1}
 
-    prompt = f"""You are a Supervisor Agent. A worker agent has just performed a task.
-    Decide what to do next.
-
-    Conversation History:
-    {messages[-2].content if len(messages) > 1 else ''}
-
-    Last Output (from Worker):
-    {last_content}
-
-    Options:
-    - finish    → The user's request is fully satisfied.
-    - reasoning → Need to explain, summarize, or format the result.
-    - research  → Need to look up documents.
-    - tools     → Need to perform another action (search, file op).
-    - memory    → Need to check memory.
-    - interview → Need interview/career help.
-
-    CRITICAL:
-    - If the last output is an answer to the user, valid and complete, choose "finish".
-    - If the last output is a tool result (e.g. weather data), choose "reasoning" to explain it to the user.
-    - Do NOT loop back to the SAME agent unless absolutely necessary.
-
-    Respond with ONLY one word."""
-
-    result = llm.invoke(prompt)
-    content = result.content.strip().lower()
-
-    match = re.search(r"\b(finish|reasoning|research|tools|memory|interview)\b", content)
-    route = match.group(1) if match else "finish"
-
-    return {"next": route, "iterations": 1}
+    return {"next": "finish", "iterations": 1}
