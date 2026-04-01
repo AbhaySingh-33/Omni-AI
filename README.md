@@ -1,403 +1,463 @@
 # OmniAI
 
-> **A sophisticated multi-agent AI system where specialized AI agents think, search, remember, reason, and take actions autonomously.**
+OmniAI is a full stack multi-agent AI platform with:
+- FastAPI backend orchestrated by LangGraph
+- Next.js frontend
+- RAG over Pinecone
+- Knowledge graph over Neo4j
+- PostgreSQL auth and memory
+- MCP tool execution (web search, calculator, file system, terminal)
+- Interview preparation module
+- Emotion and risk analytics module
 
-Full-stack AI application with FastAPI backend, Next.js frontend, LangGraph workflows, MCP tools, and multi-database architecture for intelligent, context-aware assistance.
-
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
-[![Next.js](https://img.shields.io/badge/Next.js-16.2-black.svg)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19.2-blue.svg)](https://reactjs.org/)
-[![LangGraph](https://img.shields.io/badge/LangGraph-Latest-orange.svg)](https://github.com/langchain-ai/langgraph)
-
----
+This README is a complete project reference for setup, architecture, APIs, and operations.
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Features](#features)
-- [Architecture](#architecture)
-- [Technology Stack](#technology-stack)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Environment Setup](#environment-setup)
-  - [Running the Application](#running-the-application)
-- [API Documentation](#api-documentation)
-- [Agent System](#agent-system)
-- [Usage Examples](#usage-examples)
-- [Development](#development)
-- [Contributing](#contributing)
-- [Troubleshooting](#troubleshooting)
+1. Project Summary
+2. Current Features
+3. Architecture
+4. Repository Structure
+5. Prerequisites
+6. Environment Variables
+7. Local Setup
+8. Running the System
+9. API Reference
+10. Data and Storage
+11. Agent Orchestration
+12. Performance and Latency Notes
+13. Development Workflow
+14. Testing
+15. Troubleshooting
+16. Security Notes
 
----
+## Project Summary
 
-## Overview
+OmniAI processes user input through a router-driven multi-agent workflow and returns context-aware responses.
 
-OmniAI is a **multi-agent AI system** that orchestrates specialized AI agents to provide intelligent, context-aware assistance. Unlike traditional single-LLM applications, OmniAI uses a router-based architecture where a central coordinator delegates work to specialized agents, each with its own reasoning logic, tools, and data sources.
+Primary backend entry point:
+- ai-engine/main.py
 
-### Key Highlights
+Primary frontend app:
+- client/app/page.tsx
 
-- 🤖 **5 Specialized AI Agents**: Router, Reasoning, Research, Tools, and Memory
-- 📚 **RAG-Powered**: Upload PDFs and query them with semantic search via Pinecone
-- 🛠️ **Real-World Actions**: Execute web searches, file operations, and terminal commands
-- 🧠 **Persistent Memory**: Conversation history with automatic summarization
-- 🔒 **Secure**: JWT authentication with bcrypt password hashing
-- 🎯 **Smart Routing**: LLM-based intent classification for accurate agent selection
-- 🔄 **LangGraph Orchestration**: State machine-based workflow management
-- ⚡ **Modern Stack**: FastAPI + Next.js + TypeScript + Tailwind CSS
+Optional Node service:
+- server/src/server.js
 
----
+## Current Features
 
-## Features
-
-### Core Capabilities
-
-✅ **Multi-Agent Collaboration**
-- Router agent classifies intent and delegates to specialists
-- Each agent has unique prompts, reasoning, and data sources
-- Shared state management via LangGraph
-
-✅ **Document Intelligence (RAG)**
-- Upload and ingest PDFs with automatic chunking
-- Semantic search using Mistral embeddings + Pinecone
-- Context-aware answers from your documents
-
-✅ **Tool Execution (MCP)**
-- Web search via DuckDuckGo
-- Calculator for mathematical operations
-- Filesystem operations (list, read, write)
-- Terminal command execution
-- Safety guardrails with user confirmation for risky operations
-
-✅ **Conversation Memory**
-- PostgreSQL-based chat history storage
-- Automatic summarization after 10 exchanges
-- Cross-session context retrieval
-
-✅ **Advanced Reasoning**
-- DSPy framework for structured prompting
-- General knowledge Q&A
-- Coding assistance
-- Step-by-step explanations
-
-✅ **User Authentication**
-- JWT token-based authentication
-- Secure password hashing with bcrypt
-- Per-user chat history and documents
-
-✅ **Modern UI/UX**
-- Real-time chat interface with agent badges
-- Document management panel
-- Mobile-responsive design
-- Copy message functionality
-- Session dividers and empty states
-
----
+- JWT auth (register/login)
+- Multi-agent chat endpoint
+- Emotion detection and risk scoring
+- Optional TTS audio in chat response
+- PDF upload and semantic retrieval
+- Knowledge graph ingestion and inspection
+- Interview resume generation, analysis, mock interview, scoring
+- Emotion analytics dashboard APIs
+- Client chat UI, sidebar, docs panel, KG and mood pages
 
 ## Architecture
 
-### How It Works
+High level backend flow:
 
-```
-User Message
-     │
-     ▼
-┌─────────────┐
-│   ROUTER    │  ← Classifies intent using Gemini LLM
-│   AGENT     │    (memory, reasoning, research, tools)
-└──────┬──────┘
-       │
-  ┌────┴─────────────────────────┐
-  │                              │
-  ▼                              ▼
-┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
-│ REASONING│  │ RESEARCH │  │  TOOLS   │  │  MEMORY  │
-│  AGENT   │  │  AGENT   │  │  AGENT   │  │  AGENT   │
-│          │  │          │  │          │  │          │
-│ DSPy +   │  │ Pinecone │  │ MCP      │  │ Postgres │
-│ Mistral  │  │ Vector   │  │ Tools    │  │ History  │
-│ LLM      │  │ Search   │  │ Execute  │  │ Retrieve │
-└──────────┘  └──────────┘  └──────────┘  └──────────┘
-       │
-       ▼
-  Format & Validate
-       │
-       ▼
-  Response to User
-```
+1. User sends message to POST /chat
+2. Input guard validates message
+3. Emotion detector classifies message
+4. Risk engine computes risk and trend from recent emotion history
+5. LangGraph workflow executes:
+   - router agent selects route
+   - one of reasoning, research, tools, memory, interview agents responds
+6. Output formatter and output guard process final response
+7. Background tasks persist chat, KG message extraction, and emotion log
+8. Optional TTS audio synthesis if voice=true
 
-### What Makes It Multi-Agent?
+Core modules:
+- Routing and graph: ai-engine/graph/workflow.py, ai-engine/agents/router_agent.py
+- LLM and DSPy: ai-engine/app/gemini.py, ai-engine/app/dspy_module.py
+- RAG: ai-engine/services/ingest.py, ai-engine/services/retriever.py
+- KG: ai-engine/services/kg.py, ai-engine/database/neo4j_loader.py
+- Memory: ai-engine/services/memory.py
+- Emotion: ai-engine/emotion/classifier.py, ai-engine/emotion/risk_engine.py, ai-engine/emotion/emotion_store.py
+- Tools: ai-engine/agents/tool_agent.py, ai-engine/app/mcp_client.py, mcp-servers/*.py
 
-1. **Independent AI Units**: Each agent has its own prompt, reasoning logic, and decision-making
-2. **LangGraph Orchestration**: State machine manages workflow and state passing between agents
-3. **AI-Powered Router**: Uses LLM for intent classification, not just if/else rules
-4. **Sub-Decision Making**: Tool agent picks tools, validates, and executes autonomously
-5. **Shared State**: Agents communicate through LangGraph's managed state object
+## Repository Structure
 
----
+Top level folders:
 
-## Technology Stack
+- ai-engine: Python backend
+- client: Next.js frontend
+- server: optional Node service
+- mcp-servers: MCP tool servers
+- docs: run notes
 
-### Backend (Python)
+Important backend files:
 
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| **Framework** | FastAPI | REST API server with async support |
-| **Workflow** | LangGraph | State machine-based agent orchestration |
-| **LLMs** | Mistral Large, Gemini | Primary reasoning and routing |
-| **Vector DB** | Pinecone | Document embeddings for RAG |
-| **Embeddings** | Mistral Embeddings | Text to vector conversion |
-| **Reasoning** | DSPy | Structured prompting framework |
-| **Database** | PostgreSQL | Auth, chat history, summaries |
-| **Tools** | MCP (Model Context Protocol) | Tool execution framework |
-| **Search** | DuckDuckGo (DDGS) | Web search capability |
-| **PDF** | PyPDF2, pdfplumber | Document processing |
-| **Auth** | python-jose, passlib | JWT + bcrypt |
+- ai-engine/main.py
+- ai-engine/routes/auth.py
+- ai-engine/routes/chat.py
+- ai-engine/routes/documents.py
+- ai-engine/routes/kg.py
+- ai-engine/routes/interview.py
+- ai-engine/routes/emotion.py
+- ai-engine/routes/tts.py
+- ai-engine/routes/system.py
+- ai-engine/app/auth.py
+- ai-engine/app/db.py
+- ai-engine/core/app_state.py
 
-### Frontend (TypeScript)
+Important frontend files:
 
-| Component | Technology | Version |
-|-----------|------------|---------|
-| **Framework** | Next.js | 16.2.1 |
-| **UI Library** | React | 19.2.4 |
-| **Styling** | Tailwind CSS | 4.x |
-| **Language** | TypeScript | 5.x |
-| **Linting** | ESLint | 9.x |
+- client/app/layout.tsx
+- client/app/page.tsx
+- client/app/interview/*
+- client/app/kg/*
+- client/app/mood/page.tsx
+- client/hooks/useChat.ts
+- client/hooks/useEmotion.ts
+- client/components/ChatWindow.tsx
 
-### Optional Middleware (Node.js)
+## Prerequisites
 
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| **Server** | Express.js | Optional API middleware |
-| **LLM** | @google/generative-ai | Gemini integration |
-| **HTTP** | Axios | API client |
+- Python 3.10+
+- Node.js 18+
+- npm
+- PostgreSQL
+- Pinecone index
+- Neo4j (optional but required for KG features)
+- Mistral API key
 
----
+## Environment Variables
 
-## Project Structure
-
-```
-Omni-AI/
-├── ai-engine/                 # Python FastAPI Backend
-│   ├── main.py               # FastAPI app entry point
-│   ├── requirements.txt      # Python dependencies
-│   │
-│   ├── agents/               # 5 Specialized Agents
-│   │   ├── router_agent.py       # Intent classification & delegation
-│   │   ├── reasoning_agent.py    # General Q&A with DSPy
-│   │   ├── research_agent.py     # RAG with Pinecone
-│   │   ├── tool_agent.py         # MCP tool execution
-│   │   └── memory_agent.py       # Chat history retrieval
-│   │
-│   ├── graph/
-│   │   └── workflow.py       # LangGraph state machine
-│   │
-│   ├── app/                  # Core Application Modules
-│   │   ├── gemini.py             # Mistral LLM client
-│   │   ├── pinecone_client.py    # Vector DB client
-│   │   ├── embeddings.py         # Mistral embeddings
-│   │   ├── db.py                 # PostgreSQL connection
-│   │   ├── auth.py               # JWT authentication
-│   │   ├── mcp_client.py         # Tool execution
-│   │   ├── dspy_module.py        # DSPy reasoning modules
-│   │   └── guardrails/           # Safety validation
-│   │       ├── input_guard.py
-│   │       ├── output_guard.py
-│   │       └── tool_guard.py
-│   │
-│   ├── services/             # Business Logic
-│   │   ├── memory.py             # Chat persistence & summarization
-│   │   ├── ingest.py             # PDF processing & ingestion
-│   │   └── retriever.py          # RAG retrieval
-│   │
-│   └── tests/                # Unit tests
-│
-├── client/                    # Next.js Frontend
-│   ├── app/
-│   │   ├── page.tsx              # Main chat interface
-│   │   └── layout.tsx
-│   │
-│   ├── components/           # React Components
-│   │   ├── ChatWindow.tsx        # Message display with agent badges
-│   │   ├── ChatInput.tsx         # Input & file upload
-│   │   ├── Sidebar.tsx           # Navigation
-│   │   ├── DocumentsPanel.tsx    # PDF management
-│   │   └── AuthPage.tsx          # Login/register
-│   │
-│   ├── hooks/                # Custom React Hooks
-│   │   ├── useChat.ts            # Chat API integration
-│   │   ├── useAuth.ts            # Authentication logic
-│   │   ├── useUpload.ts          # PDF upload
-│   │   └── useDocuments.ts       # Document management
-│   │
-│   ├── lib/
-│   │   └── types.ts              # TypeScript interfaces
-│   │
-│   └── package.json
-│
-├── server/                    # Optional Express Middleware
-│   ├── src/
-│   │   ├── server.js             # Express entry point
-│   │   ├── app.js                # App configuration
-│   │   ├── config/               # API clients
-│   │   ├── controllers/          # Route handlers
-│   │   ├── routes/               # Route definitions
-│   │   └── services/             # Business logic
-│   │
-│   └── package.json
-│
-├── mcp-servers/              # MCP Tool Implementations
-│   ├── search_server.py          # Web search & calculator
-│   ├── filesystem_server.py      # File operations
-│   └── terminal_server.py        # Command execution
-│
-└── README.md                 # This file
-```
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- **Python 3.8+** with pip
-- **Node.js 18+** with npm
-- **PostgreSQL** database
-- **Pinecone** account ([sign up here](https://www.pinecone.io/))
-- **API Keys**:
-  - Mistral AI ([get key](https://console.mistral.ai/))
-  - Google Gemini ([get key](https://ai.google.dev/))
-
-### Installation
-
-#### 1. Clone the Repository
-
-```bash
-git clone https://github.com/AbhaySingh-33/Omni-AI.git
-cd Omni-AI
-```
-
-#### 2. Setup Python Backend
-
-```bash
-cd ai-engine
-
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-# On Windows:
-venv\Scripts\activate
-# On macOS/Linux:
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-#### 3. Setup Frontend
-
-```bash
-cd client
-npm install
-```
-
-#### 4. Setup Optional Node.js Server (if needed)
-
-```bash
-cd server
-npm install
-```
-
-### Environment Setup
-
-Create a `.env` file in the root directory:
+Create .env in ai-engine directory (recommended) with:
 
 ```env
-# ── Mistral AI (Primary LLM) ──
-MISTRAL_API_KEY=your_mistral_api_key_here
+# LLM
+MISTRAL_API_KEY=your_key
+MISTRAL_MODEL=mistral-small-latest
 
-# ── Google Gemini (Router LLM) ──
-GOOGLE_API_KEY=your_google_gemini_api_key_here
+# Vector DB
+PINECONE_API_KEY=your_key
+PINECONE_INDEX=your_index_name
 
-# ── Pinecone Vector Database ──
-PINECONE_API_KEY=your_pinecone_api_key_here
-PINECONE_INDEX=omni-ai-docs
+# Relational DB
+DATABASE_URL=postgresql://user:password@host:5432/dbname
 
-# ── PostgreSQL Database ──
-DATABASE_URL=postgresql://username:password@localhost:5432/omni_ai?sslmode=require
+# Auth
+JWT_SECRET=change-this-secret
 
-# ── JWT Authentication ──
-JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
-JWT_ALGORITHM=HS256
+# Neo4j (for KG)
+NEO4J_URI=neo4j+s://<host>
+NEO4J_USER=neo4j
+# or NEO4J_USERNAME=neo4j
+NEO4J_PASSWORD=your_password
+```
 
-# ── Frontend API URL ──
+Create .env.local in client directory:
+
+```env
 NEXT_PUBLIC_AI_ENGINE_URL=http://localhost:8000
 ```
 
-### Running the Application
+Notes:
+- MISTRAL_MODEL is optional. Current default in code is mistral-small-latest.
+- KG routes will fail if Neo4j variables are missing.
 
-#### Start All Services
+## Local Setup
 
-**Terminal 1 - Python Backend:**
+### Backend setup
+
 ```bash
 cd ai-engine
-source venv/bin/activate  # or venv\Scripts\activate on Windows
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+
+# Linux/macOS
+# source .venv/bin/activate
+
+pip install -r requirements.txt
+```
+
+### Database migration
+
+```bash
+cd ai-engine
+.venv\Scripts\activate
+python migrate.py
+```
+
+### Frontend setup
+
+```bash
+cd client
+npm install
+```
+
+### Optional Node service
+
+```bash
+cd server
+npm install
+```
+
+## Running the System
+
+Run backend:
+
+```bash
+cd ai-engine
+.venv\Scripts\activate
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-**Terminal 2 - Frontend:**
+Run frontend:
+
 ```bash
 cd client
 npm run dev
 ```
 
-**Terminal 3 - Optional Node.js Server:**
+Optional Node service:
+
 ```bash
 cd server
 npm run dev
 ```
 
-#### Access the Application
+Open:
+- Frontend: http://localhost:3000
+- Backend: http://localhost:8000
+- Backend docs: http://localhost:8000/docs
 
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000
-- **API Docs**: http://localhost:8000/docs (FastAPI automatic documentation)
+## API Reference
 
----
+All protected endpoints require:
 
-## API Documentation
+Authorization: Bearer <token>
 
-### Authentication
+### System
 
-#### Register User
-```http
-POST /auth/register
-Content-Type: application/json
+- GET /
+  - Health message from backend
 
-{
-  "email": "user@example.com",
-  "password": "securepassword"
-}
+### Auth
+
+- POST /auth/register
+  - body: { "email": string, "password": string }
+  - returns token and email
+
+- POST /auth/login
+  - body: { "email": string, "password": string }
+  - returns token and email
+
+### Chat
+
+- POST /chat
+  - body: { "message": string, "voice": boolean, "voice_lang": string|null }
+  - returns:
+    - response
+    - agent
+    - optional emotion metadata
+    - optional audio_b64 and audio_mime
+
+- GET /history
+  - returns last persisted user/assistant turns
+
+### Documents and RAG
+
+- POST /upload
+  - multipart PDF upload
+  - ingests chunks to Pinecone and KG
+
+- GET /documents
+  - list uploaded docs and chunk counts
+
+- DELETE /documents/{doc_id}
+  - delete vectors and related KG document edges
+
+### KG
+
+- GET /kg/health
+  - shows Neo4j env variable presence
+
+- GET /kg/inspect
+  - query params:
+    - q
+    - limit
+    - doc_id
+    - source_type
+
+### TTS
+
+- POST /tts
+  - body: { "text": string, "lang": string }
+  - returns audio/mpeg binary
+
+### Emotion
+
+- GET /emotion/history?days=30
+- GET /emotion/trend?days=7
+- GET /emotion/alerts
+- GET /emotion/analytics
+- POST /emotion/alerts/{alert_id}/acknowledge
+
+### Interview
+
+Resume:
+- POST /interview/resume
+- POST /interview/resume/generate
+- POST /interview/resume/analyze
+- GET /interview/resume
+- GET /interview/resume/all
+- DELETE /interview/resume/{resume_id}
+
+Questions and simulation:
+- POST /interview/questions
+- POST /interview/mock/start
+- POST /interview/mock/respond
+- GET /interview/mock/session/{session_id}
+- GET /interview/mock/sessions
+
+Feedback and progress:
+- POST /interview/feedback/{session_id}
+- GET /interview/feedback/{session_id}
+- POST /interview/evaluate-answer
+- GET /interview/progress
+- POST /interview/init-db
+
+## Data and Storage
+
+PostgreSQL tables (created by migrate.py and startup initializers):
+
+- users
+- chat_history
+- summarized_memory
+- emotion_log
+- emotion_alerts
+- interview-related tables from services/interview.py initializer
+
+Pinecone:
+- stores embedded document chunks with metadata user_id/doc_id/chunk/filename
+
+Neo4j:
+- nodes: Entity, Document, Message
+- relationships for mentions and extracted relations
+- constraints/indexes auto-created by Neo4jLoader
+
+## Agent Orchestration
+
+Graph nodes:
+- router
+- reasoning
+- research
+- tools
+- memory
+- interview
+
+State includes:
+- messages
+- next
+- user_id
+- iterations
+- agent_used
+- emotion_context
+
+Router behavior:
+- deterministic keyword fast paths for low latency
+- routes to specific agent
+- worker response usually finishes in one pass
+
+## Performance and Latency Notes
+
+Latency optimizations already in code:
+
+- blocking work moved to threadpool in chat route
+- background tasks for persistence operations
+- deterministic router paths to reduce unnecessary model calls
+- configurable fast default model via MISTRAL_MODEL
+- parallel retrieval/KG calls in research and memory paths
+- timeout protection on optional context fetches
+- thread-local PostgreSQL connection handling
+
+If response is still slow, verify:
+
+1. Backend restarted after code changes
+2. MISTRAL_MODEL is set to a fast model
+3. Pinecone index is reachable and healthy
+4. Neo4j is reachable (if KG enabled)
+5. DATABASE_URL network latency is reasonable
+
+## Development Workflow
+
+Typical workflow:
+
+1. Start backend and frontend
+2. Create account and login
+3. Test chat, upload, and interview routes from UI
+4. Validate backend with /docs
+5. Run focused tests from ai-engine/tests
+
+Formatting and linting:
+- Frontend: npm run lint
+- Backend: use your preferred formatter/linter (not enforced in this repo root)
+
+## Testing
+
+Backend tests/scripts currently present in ai-engine/tests:
+
+- check_rag.py
+- test_rag.py
+- test_a2a_loop.py
+- test_a2a_mocked.py
+- test_a2a_scenario_aapl.py
+
+Run example:
+
+```bash
+cd ai-engine
+.venv\Scripts\activate
+python tests\test_rag.py
 ```
 
-**Response:**
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIs...",
-  "email": "user@example.com"
-}
-```
+## Troubleshooting
 
-#### Login
-```http
-POST /auth/login
-Content-Type: application/json
+### 1) Auth fails
+- Confirm DATABASE_URL is correct
+- Run migrate.py
+- Ensure users table exists
 
-{
-  "email": "user@example.com",
+### 2) /chat returns slowly
+- Check MISTRAL_MODEL
+- Check external DB/network latency
+- Check Pinecone and Neo4j connectivity
+
+### 3) KG endpoints fail
+- Ensure NEO4J_URI, NEO4J_USER (or NEO4J_USERNAME), NEO4J_PASSWORD are set
+
+### 4) Upload works but answers have no context
+- Verify PINECONE_INDEX and API key
+- Confirm vectors were inserted (logs during upload)
+
+### 5) TTS fails
+- Check outbound internet access for gTTS
+- Validate language code sent to /tts
+
+### 6) Frontend cannot reach backend
+- Confirm NEXT_PUBLIC_AI_ENGINE_URL in client/.env.local
+- Confirm backend is running on that URL
+
+## Security Notes
+
+- Do not use default JWT secret in production
+- Restrict CORS in production
+- Enforce strong DB credentials and TLS
+- Review tool guard rules before enabling broad command execution
+- Keep API keys only in server-side env files
+
+## License
+
+No license file is currently defined in this repository. Add a LICENSE file before open-source distribution.
   "password": "securepassword"
 }
 ```
