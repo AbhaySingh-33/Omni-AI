@@ -17,9 +17,16 @@ from emotion import detect_emotion, assess_risk
 router = APIRouter()
 
 
-def _save_chat_safe(user_id: str, checked_input: str, safe_response: str) -> None:
+def _save_chat_safe(user_id: str, session_id: str, checked_input: str, safe_response: str) -> None:
     try:
-        save_chat(user_id, checked_input, safe_response)
+        from services.memory import create_session, get_sessions
+        # Auto-create session if it doesn't exist. Use a snippet as title.
+        try:
+            title = checked_input[:40] + "..." if len(checked_input) > 40 else checked_input
+            create_session(user_id, session_id, title)
+        except Exception:
+            pass # Pre-exists or fails
+        save_chat(user_id, session_id, checked_input, safe_response)
     except Exception as exc:
         print(f"save_chat skipped: {exc}")
 
@@ -53,6 +60,7 @@ def _save_emotion_safe(
 
 class ChatRequest(BaseModel):
     message: str
+    session_id: str
     voice: bool = False
     voice_lang: Optional[str] = None
 
@@ -109,7 +117,7 @@ async def chat(req: ChatRequest, background_tasks: BackgroundTasks, user=Depends
     agent_used = result.get("agent_used") or result.get("next", "reasoning")
 
     # Persist to DB/KG/Emotion asynchronously after the response is sent.
-    background_tasks.add_task(_save_chat_safe, user_id, checked_input, safe_response)
+    background_tasks.add_task(_save_chat_safe, user_id, req.session_id, checked_input, safe_response)
     background_tasks.add_task(_ingest_user_message_safe, checked_input, user_id)
     background_tasks.add_task(_save_emotion_safe, user_id, emotion_result, risk_assessment, checked_input)
 
@@ -138,13 +146,30 @@ async def chat(req: ChatRequest, background_tasks: BackgroundTasks, user=Depends
     return payload
 
 
-@router.get("/history")
-def get_history(user=Depends(get_current_user)):
+@router.get("/history/sessions")
+def fetch_sessions(user=Depends(get_current_user)):
+    from services.memory import get_sessions
+    try:
+        return {"sessions": get_sessions(user["user_id"])}
+    except Exception as exc:
+        return {"sessions": [], "error": str(exc)}
+
+@router.get("/history/{session_id}")
+def get_history(session_id: str, user=Depends(get_current_user)):
     from services.memory import get_history as fetch_history
-    rows = fetch_history(user["user_id"], limit=50)
+    rows = fetch_history(user["user_id"], session_id, limit=50)
     messages = []
     for msg, resp in rows:
         messages.append({"role": "user", "content": msg})
         messages.append({"role": "assistant", "content": resp})
     return {"messages": messages}
+
+@router.delete("/history/{session_id}")
+def delete_chat_history(session_id: str, user=Depends(get_current_user)):
+    from services.memory import delete_session
+    try:
+        delete_session(user["user_id"], session_id)
+        return {"success": True, "message": "Chat session deleted successfully."}
+    except Exception as exc:
+        return {"success": False, "error": str(exc)}
 

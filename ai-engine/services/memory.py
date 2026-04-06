@@ -4,25 +4,59 @@ from app.gemini import llm
 SUMMARIZE_AFTER = 10
 
 
-def save_chat(user_id, message, response):
+def create_session(user_id, session_id, title):
     conn = get_connection()
     with conn.cursor() as cur:
         cur.execute(
-            "INSERT INTO chat_history (user_id, message, response) VALUES (%s, %s, %s)",
-            (user_id, message, response),
+            "INSERT INTO chat_sessions (id, user_id, title) VALUES (%s, %s, %s)",
+            (session_id, user_id, title)
+        )
+    conn.commit()
+
+
+def get_sessions(user_id):
+    conn = get_connection()
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT id, title, created_at FROM chat_sessions WHERE user_id=%s ORDER BY created_at DESC",
+            (user_id,)
+        )
+        return [{"id": row[0], "title": row[1], "createdAt": row[2].isoformat()} for row in cur.fetchall()]
+
+
+def save_chat(user_id, session_id, message, response):
+    conn = get_connection()
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO chat_history (user_id, session_id, message, response) VALUES (%s, %s, %s, %s)",
+            (user_id, session_id, message, response),
         )
     conn.commit()
     _maybe_summarize(user_id)
 
 
-def get_history(user_id, limit=20):
+def get_history(user_id, session_id=None, limit=50):
     conn = get_connection()
     with conn.cursor() as cur:
-        cur.execute(
-            "SELECT message, response FROM chat_history WHERE user_id=%s ORDER BY created_at ASC LIMIT %s",
-            (user_id, limit),
-        )
+        if session_id:
+            cur.execute(
+                "SELECT message, response FROM chat_history WHERE user_id=%s AND session_id=%s ORDER BY created_at ASC LIMIT %s",
+                (user_id, session_id, limit),
+            )
+        else:
+            cur.execute(
+                "SELECT message, response FROM chat_history WHERE user_id=%s AND session_id IS NULL ORDER BY created_at ASC LIMIT %s",
+                (user_id, limit),
+            )
         return cur.fetchall()
+
+
+def delete_session(user_id, session_id):
+    conn = get_connection()
+    with conn.cursor() as cur:
+        cur.execute("DELETE FROM chat_history WHERE user_id=%s AND session_id=%s", (user_id, session_id))
+        cur.execute("DELETE FROM chat_sessions WHERE id=%s AND user_id=%s", (session_id, user_id))
+    conn.commit()
 
 
 def get_summary(user_id):

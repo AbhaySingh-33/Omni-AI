@@ -3,14 +3,16 @@ import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import ChatWindow from "@/components/ChatWindow";
 import ChatInput from "@/components/ChatInput";
+import ChatSessionsSidebar from "@/components/ChatSessionsSidebar";
 import AuthPage from "@/components/AuthPage";
 import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function Home() {
   const { user, loading: authLoading, error: authError, login, register, logout } = useAuth();
-  const { messages, loading, historyLoading, sendMessage, clearMessages } = useChat(user?.token ?? null);
+  const { messages, loading, historyLoading, sendMessage, startNewChat } = useChat(user?.token ?? null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sessionsOpen, setSessionsOpen] = useState(true); // Automatically open sessions by default on desktop
   const [uploadCount, setUploadCount] = useState(0);
 
   if (!user) {
@@ -34,18 +36,45 @@ export default function Home() {
         token={user?.token ?? null}
       />
 
+      <ChatSessionsSidebar
+        isOpen={sessionsOpen}
+        onClose={() => setSessionsOpen(false)}
+        token={user?.token ?? null}
+      />
+
       <div className="flex flex-col flex-1 min-w-0">
         <header className="flex items-center gap-3 px-4 py-4 border-b border-white/5 bg-[#0a0a0a] flex-shrink-0">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 text-white/50 transition-colors"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 text-white/50 transition-colors"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setSessionsOpen(!sessionsOpen)}
+              className="hidden lg:flex w-8 h-8 items-center justify-center rounded-lg hover:bg-white/5 text-white/50 transition-colors"
+              title="Toggle Sessions"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <line x1="9" y1="3" x2="9" y2="21" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setSessionsOpen(true)}
+              className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 text-white/50 transition-colors"
+              title="View History"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+          </div>
           <div className="flex-1">
             <h1 className="text-sm font-medium text-white/80">OmniAI</h1>
             <p className="text-xs text-white/30">Multi-agent . Reasoning . Research . Tools . Memory</p>
@@ -72,7 +101,7 @@ export default function Home() {
           <ChatInput
             onSend={sendMessage}
             loading={loading}
-            onClear={clearMessages}
+            onClear={startNewChat}
             onUploadSuccess={() => setUploadCount((c) => c + 1)}
             token={user?.token ?? null}
           />
