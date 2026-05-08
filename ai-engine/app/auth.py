@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.db import get_connection
 
@@ -11,7 +11,8 @@ ALGORITHM = "HS256"
 EXPIRE_HOURS = 24 * 7  # 7 days
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-bearer_scheme = HTTPBearer()
+AUTH_COOKIE_NAME = "omni_token"
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def hash_password(password: str) -> str:
@@ -31,17 +32,28 @@ def create_token(user_id: str, email: str) -> str:
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
-    token = credentials.credentials
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
-        email: str = payload.get("email")
-        if not user_id:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-        return {"user_id": user_id, "email": email}
-    except JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+def get_current_user(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+):
+    bearer_token = credentials.credentials if credentials else None
+    cookie_token = request.cookies.get(AUTH_COOKIE_NAME)
+
+    tokens = [t for t in [bearer_token, cookie_token] if t]
+    if not tokens:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+
+    for token in tokens:
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            user_id: str = payload.get("sub")
+            email: str = payload.get("email")
+            if user_id:
+                return {"user_id": user_id, "email": email}
+        except JWTError:
+            continue
+
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
 
 
 def register_user(email: str, password: str):

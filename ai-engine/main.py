@@ -1,5 +1,6 @@
 import nest_asyncio
 nest_asyncio.apply()
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,14 +13,19 @@ from routes.tts import router as tts_router
 from routes.kg import router as kg_router
 from routes.interview import router as interview_router
 from routes.emotion import router as emotion_router
+from routes.legal_rag import router as legal_rag_router
 
 app = FastAPI()
 
+origins_env = os.getenv("FRONTEND_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+allowed_origins = [o.strip() for o in origins_env.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_credentials=True,
 )
 
 app.include_router(auth_router)
@@ -30,6 +36,7 @@ app.include_router(system_router)
 app.include_router(kg_router)
 app.include_router(interview_router)
 app.include_router(emotion_router)
+app.include_router(legal_rag_router)
 
 
 @app.on_event("startup")

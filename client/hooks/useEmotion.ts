@@ -56,6 +56,7 @@ export function useEmotion(token: string | null) {
     setError(null);
     try {
       const res = await fetch(`${AI_ENGINE_URL}/emotion/analytics`, {
+        credentials: "include",
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(`Error: ${res.status}`);
@@ -73,6 +74,7 @@ export function useEmotion(token: string | null) {
     try {
       await fetch(`${AI_ENGINE_URL}/emotion/alerts/${alertId}/acknowledge`, {
         method: "POST",
+        credentials: "include",
         headers: { Authorization: `Bearer ${token}` },
       });
       // Refresh analytics after acknowledging

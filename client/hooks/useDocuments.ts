@@ -21,6 +21,7 @@ export function useDocuments(token: string | null, refreshTrigger: number) {
     setLoading(true);
     try {
       const res = await fetch(`${AI_ENGINE_URL}/documents`, {
+        credentials: "include",
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -39,6 +40,7 @@ export function useDocuments(token: string | null, refreshTrigger: number) {
     try {
       const res = await fetch(`${AI_ENGINE_URL}/documents/${doc_id}`, {
         method: "DELETE",
+        credentials: "include",
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Delete failed");

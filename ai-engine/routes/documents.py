@@ -67,4 +67,11 @@ def delete_document(doc_id: str, user=Depends(get_current_user)):
     except Exception as exc:
         print(f"KG delete skipped: {exc}")
 
+    # Also clean legal vectorless KG for the same doc_id if present.
+    try:
+        from legal_rag.neo4j_store import LegalGraphStore
+        LegalGraphStore().delete_document(user["user_id"], doc_id)
+    except Exception as exc:
+        print(f"Legal KG delete skipped: {exc}")
+
     return {"status": "ok", "deleted_chunks": len(ids)}

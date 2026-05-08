@@ -52,7 +52,7 @@ export function useChat(token: string | null) {
   const fetchSessions = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await fetch(`${AI_ENGINE_URL}/history/sessions`, { headers: authHeaders });
+      const res = await fetch(`${AI_ENGINE_URL}/history/sessions`, { headers: authHeaders, credentials: "include" });
       if (res.ok) {
         const data = await res.json();
         dispatch(setSessions(data.sessions || []));
@@ -69,7 +69,7 @@ export function useChat(token: string | null) {
     dispatch(setHistoryLoading(true));
     dispatch(setActiveSessionId(sessionId));
     try {
-      const res = await fetch(`${AI_ENGINE_URL}/history/${sessionId}`, { headers: authHeaders });
+      const res = await fetch(`${AI_ENGINE_URL}/history/${sessionId}`, { headers: authHeaders, credentials: "include" });
       if (!res.ok) return;
       const data = await res.json();
       const loaded: Message[] = (data.messages ?? []).map(
@@ -126,6 +126,7 @@ export function useChat(token: string | null) {
     try {
       const res = await fetch(`${AI_ENGINE_URL}/chat`, {
         method: "POST",
+        credentials: "include",
         headers: authHeaders,
         body: JSON.stringify({ message: content, session_id: currentSessionId }),
       });
@@ -151,6 +152,7 @@ export function useChat(token: string | null) {
     try {
       const res = await fetch(`${AI_ENGINE_URL}/history/${sessionId}`, {
         method: "DELETE",
+        credentials: "include",
         headers: authHeaders,
       });
       if (!res.ok) throw new Error("Failed to delete history on server.");

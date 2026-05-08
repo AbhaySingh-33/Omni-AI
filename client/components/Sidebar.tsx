@@ -48,6 +48,7 @@ export default function Sidebar({ isOpen, onClose, uploadCount, token }: Sidebar
   const isKgActive = pathname?.startsWith("/kg");
   const isInterviewActive = pathname?.startsWith("/interview");
   const isMoodActive = pathname?.startsWith("/mood");
+  const isLegalRagActive = pathname?.startsWith("/legal-rag");
 
   return (
     <>
@@ -69,7 +70,7 @@ export default function Sidebar({ isOpen, onClose, uploadCount, token }: Sidebar
         <div className="flex flex-col gap-0 border-b border-white/5 bg-[#0a0a0a]">
             {/* Header / Logo */}
             <div className="flex items-center gap-3 px-5 py-5">
-                <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0">
+                <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0">
                     <Image
                     src="/AI.jpg"
                     alt="OmniAI Logo"
@@ -130,6 +131,17 @@ export default function Sidebar({ isOpen, onClose, uploadCount, token }: Sidebar
                 >
                     <span className="text-lg opacity-80">📈</span>
                     Mood Tracker
+                </Link>
+                <Link
+                  href="/legal-rag"
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isLegalRagActive
+                    ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                    : "text-white/50 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  <span className="text-lg opacity-80">⚖️</span>
+                  Legal RAG
                 </Link>
             </div>
         </div>

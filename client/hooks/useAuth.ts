@@ -25,6 +25,7 @@ export function useAuth() {
       const res = await fetch(`${AI_ENGINE_URL}${path}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
@@ -49,6 +50,12 @@ export function useAuth() {
     _request("/auth/register", email, password), [dispatch]);
 
   const logout = useCallback(() => {
+    void fetch(`${AI_ENGINE_URL}/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    }).catch(() => {
+      // ignore logout transport errors; local sign-out still proceeds
+    });
     localStorage.removeItem(TOKEN_KEY);
     dispatch(logoutAction());
   }, [dispatch]);
