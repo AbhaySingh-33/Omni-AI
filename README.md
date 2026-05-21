@@ -1,209 +1,168 @@
 # OmniAI
 
-OmniAI is a full stack multi-agent AI platform with:
-- FastAPI backend orchestrated by LangGraph
-- Next.js frontend
-- RAG over Pinecone
-- Knowledge graph over Neo4j
-- PostgreSQL auth and memory
-- MCP tool execution (web search, calculator, file system, terminal)
-- Interview preparation module
-- Emotion and risk analytics module
+A full-stack, multi-agent AI platform that turns user intent into action with guardrails, retrieval, and analytics.
 
-This README is a complete project reference for setup, architecture, APIs, and operations.
+OmniAI solves a practical problem: how to build a reliable AI assistant that can route between reasoning, research, tools, memory, and interview workflows, while still tracking user wellbeing signals (emotion + risk) and maintaining retrieval context from documents and a knowledge graph.
 
-## Table of Contents
+This repository contains a production-style FastAPI backend orchestrated by LangGraph and a polished Next.js client. The platform supports multi-agent chat, RAG over Pinecone, knowledge graph over Neo4j, MCP tool execution, and an interview preparation suite.
 
-1. Project Summary
-2. Current Features
-3. Architecture
-4. Repository Structure
-5. Prerequisites
-6. Environment Variables
-7. Local Setup
-8. Running the System
-9. API Reference
-10. Data and Storage
-11. Agent Orchestration
-12. Performance and Latency Notes
-13. Development Workflow
-14. Testing
-15. Troubleshooting
-16. Security Notes
+---
 
-## Project Summary
+## What This Project Does
 
-OmniAI processes user input through a router-driven multi-agent workflow and returns context-aware responses.
+OmniAI receives a user message, detects emotion, computes risk context, routes the request to a specialized agent, and returns a formatted response. It also stores chat history, extracts knowledge graph signals, and optionally generates TTS audio.
 
-Primary backend entry point:
-- ai-engine/main.py
+Primary use cases:
 
-Primary frontend app:
-- client/app/page.tsx
+- Multi-agent conversational assistant
+- Document Q&A with vector retrieval
+- Knowledge graph exploration
+- Interview prep workflows and scoring
+- Emotion analytics with trend tracking
 
-Optional Node service:
-- server/src/server.js
+---
 
-## Current Features
+## Architecture Overview
 
-- JWT auth (register/login)
-- Multi-agent chat endpoint
+At a high level, the backend is a LangGraph state machine wrapped by FastAPI, and the frontend is a Next.js SPA that consumes the API and renders the agent + emotion metadata.
+
+```mermaid
+flowchart LR
+  U[User] --> UI[Next.js Client]
+  UI -->|JWT Auth| API[FastAPI /chat]
+  API --> IG[Input Guard]
+  IG --> ED[Emotion Detection]
+  ED --> RA[Risk Assessment]
+  RA --> LG[LangGraph Router]
+  LG --> R1[Reasoning Agent]
+  LG --> R2[Research Agent]
+  LG --> R3[Tools Agent]
+  LG --> R4[Memory Agent]
+  LG --> R5[Interview Agent]
+  R1 --> OUT[Output Guard + Formatter]
+  R2 --> OUT
+  R3 --> OUT
+  R4 --> OUT
+  R5 --> OUT
+  OUT --> UI
+  OUT -->|Async| DB[(PostgreSQL)]
+  OUT -->|Async| PC[(Pinecone)]
+  OUT -->|Async| KG[(Neo4j)]
+  OUT -->|Optional| TTS[Text-to-Speech]
+```
+
+---
+
+## Key Features
+
+- Multi-agent routing with LangGraph
+- Input + output guardrails
 - Emotion detection and risk scoring
-- Optional TTS audio in chat response
-- PDF upload and semantic retrieval
-- Knowledge graph ingestion and inspection
-- Interview resume generation, analysis, mock interview, scoring
-- Emotion analytics dashboard APIs
-- Client chat UI, sidebar, docs panel, KG and mood pages
+- RAG with Pinecone + chunked PDF ingestion
+- Knowledge graph ingestion and inspection via Neo4j
+- MCP tool execution (web search, calculator, filesystem, terminal)
+- Interview prep: resume analysis, mock sessions, feedback
+- Optional TTS audio responses
+- Polished chat UI with sessions and emotion tags
 
-## Architecture
+---
 
-High level backend flow:
+## Repository Map
 
-1. User sends message to POST /chat
-2. Input guard validates message
-3. Emotion detector classifies message
-4. Risk engine computes risk and trend from recent emotion history
-5. LangGraph workflow executes:
-   - router agent selects route
-   - one of reasoning, research, tools, memory, interview agents responds
-6. Output formatter and output guard process final response
-7. Background tasks persist chat, KG message extraction, and emotion log
-8. Optional TTS audio synthesis if voice=true
-
-Core modules:
-- Routing and graph: ai-engine/graph/workflow.py, ai-engine/agents/router_agent.py
-- LLM and DSPy: ai-engine/app/gemini.py, ai-engine/app/dspy_module.py
-- RAG: ai-engine/services/ingest.py, ai-engine/services/retriever.py
-- KG: ai-engine/services/kg.py, ai-engine/database/neo4j_loader.py
-- Memory: ai-engine/services/memory.py
-- Emotion: ai-engine/emotion/classifier.py, ai-engine/emotion/risk_engine.py, ai-engine/emotion/emotion_store.py
-- Tools: ai-engine/agents/tool_agent.py, ai-engine/app/mcp_client.py, mcp-servers/*.py
-
-## Repository Structure
-
-Top level folders:
-
-- ai-engine: Python backend
-- client: Next.js frontend
+- ai-engine: FastAPI backend, agents, graph, services
+- client: Next.js UI (chat, mood, interview, KG)
 - server: optional Node service
 - mcp-servers: MCP tool servers
 - docs: run notes
 
-Important backend files:
+---
 
-- ai-engine/main.py
-- ai-engine/routes/auth.py
-- ai-engine/routes/chat.py
-- ai-engine/routes/documents.py
-- ai-engine/routes/kg.py
-- ai-engine/routes/interview.py
-- ai-engine/routes/emotion.py
-- ai-engine/routes/tts.py
-- ai-engine/routes/system.py
-- ai-engine/app/auth.py
-- ai-engine/app/db.py
-- ai-engine/core/app_state.py
+## How It Works (Backend Flow)
 
-Important frontend files:
+1) POST /chat receives the message
+2) Input guard validates
+3) Emotion classifier detects tone + intensity
+4) Risk engine evaluates trends from history
+5) LangGraph routes to the right agent
+6) Output guard + formatter finalize response
+7) Background tasks persist memory + KG extraction
+8) Optional TTS returns audio
 
-- client/app/layout.tsx
-- client/app/page.tsx
-- client/app/interview/*
-- client/app/kg/*
-- client/app/mood/page.tsx
-- client/hooks/useChat.ts
-- client/hooks/useEmotion.ts
-- client/components/ChatWindow.tsx
+---
 
-## Prerequisites
+## Tech Stack
+
+Backend: FastAPI, LangGraph, Mistral API, PostgreSQL
+Retrieval: Pinecone, BM25 fallback
+Graph: Neo4j
+Frontend: Next.js, React, Tailwind
+Tools: MCP servers (filesystem, search, terminal)
+
+---
+
+## Setup
+
+### Prerequisites
 
 - Python 3.10+
 - Node.js 18+
-- npm
 - PostgreSQL
 - Pinecone index
-- Neo4j (optional but required for KG features)
+- Neo4j (required for KG features)
 - Mistral API key
 
-## Environment Variables
-
-Create .env in ai-engine directory (recommended) with:
-
-```env
-# LLM
-MISTRAL_API_KEY=your_key
-MISTRAL_MODEL=mistral-small-latest
-
-# Vector DB
-PINECONE_API_KEY=your_key
-PINECONE_INDEX=your_index_name
-
-# Relational DB
-DATABASE_URL=postgresql://user:password@host:5432/dbname
-
-# Auth
-JWT_SECRET=change-this-secret
-
-# Neo4j (for KG)
-NEO4J_URI=neo4j+s://<host>
-NEO4J_USER=neo4j
-# or NEO4J_USERNAME=neo4j
-NEO4J_PASSWORD=your_password
-```
-
-Create .env.local in client directory:
-
-```env
-NEXT_PUBLIC_AI_ENGINE_URL=http://localhost:8000
-```
-
-Notes:
-- MISTRAL_MODEL is optional. Current default in code is mistral-small-latest.
-- KG routes will fail if Neo4j variables are missing.
-
-## Local Setup
-
-### Backend setup
+### Backend
 
 ```bash
 cd ai-engine
 python -m venv .venv
-
-# Windows
 .venv\Scripts\activate
-
-# Linux/macOS
-# source .venv/bin/activate
-
 pip install -r requirements.txt
 ```
 
-### Database migration
-
-```bash
-cd ai-engine
-.venv\Scripts\activate
-python migrate.py
-```
-
-### Frontend setup
+### Frontend
 
 ```bash
 cd client
 npm install
 ```
 
-### Optional Node service
+### Optional Node Service
 
 ```bash
 cd server
 npm install
 ```
 
-## Running the System
+---
 
-Run backend:
+## Environment Variables
+
+Create ai-engine/.env:
+
+```env
+MISTRAL_API_KEY=your_key
+MISTRAL_MODEL=mistral-small-latest
+PINECONE_API_KEY=your_key
+PINECONE_INDEX=your_index_name
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+JWT_SECRET=change-this-secret
+NEO4J_URI=neo4j+s://<host>
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=your_password
+```
+
+Create client/.env.local:
+
+```env
+NEXT_PUBLIC_AI_ENGINE_URL=http://localhost:8000
+```
+
+---
+
+## Run
+
+Backend:
 
 ```bash
 cd ai-engine
@@ -211,196 +170,38 @@ cd ai-engine
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Run frontend:
+Frontend:
 
 ```bash
 cd client
 npm run dev
 ```
 
-Optional Node service:
-
-```bash
-cd server
-npm run dev
-```
-
 Open:
-- Frontend: http://localhost:3000
-- Backend: http://localhost:8000
-- Backend docs: http://localhost:8000/docs
+- http://localhost:3000
+- http://localhost:8000/docs
 
-## API Reference
+---
 
-All protected endpoints require:
+## API Highlights
 
-Authorization: Bearer <token>
+Auth: /auth/register, /auth/login
+Chat: /chat, /history/sessions, /history/{session_id}
+Documents: /upload, /documents
+KG: /kg/inspect, /kg/health
+Emotion: /emotion/analytics, /emotion/trend
+Interview: /interview/mock/start, /interview/feedback/{session_id}
+TTS: /tts
 
-### System
+---
 
-- GET /
-  - Health message from backend
+## Data & Storage
 
-### Auth
+- PostgreSQL stores users, chat history, emotion logs, interview sessions
+- Pinecone stores embedded document chunks
+- Neo4j stores extracted entities, relations, and messages
 
-- POST /auth/register
-  - body: { "email": string, "password": string }
-  - returns token and email
-
-- POST /auth/login
-  - body: { "email": string, "password": string }
-  - returns token and email
-
-### Chat
-
-- POST /chat
-  - body: { "message": string, "voice": boolean, "voice_lang": string|null }
-  - returns:
-    - response
-    - agent
-    - optional emotion metadata
-    - optional audio_b64 and audio_mime
-
-- GET /history
-  - returns last persisted user/assistant turns
-
-### Documents and RAG
-
-- POST /upload
-  - multipart PDF upload
-  - ingests chunks to Pinecone and KG
-
-- GET /documents
-  - list uploaded docs and chunk counts
-
-- DELETE /documents/{doc_id}
-  - delete vectors and related KG document edges
-
-### KG
-
-- GET /kg/health
-  - shows Neo4j env variable presence
-
-- GET /kg/inspect
-  - query params:
-    - q
-    - limit
-    - doc_id
-    - source_type
-
-### TTS
-
-- POST /tts
-  - body: { "text": string, "lang": string }
-  - returns audio/mpeg binary
-
-### Emotion
-
-- GET /emotion/history?days=30
-- GET /emotion/trend?days=7
-- GET /emotion/alerts
-- GET /emotion/analytics
-- POST /emotion/alerts/{alert_id}/acknowledge
-
-### Interview
-
-Resume:
-- POST /interview/resume
-- POST /interview/resume/generate
-- POST /interview/resume/analyze
-- GET /interview/resume
-- GET /interview/resume/all
-- DELETE /interview/resume/{resume_id}
-
-Questions and simulation:
-- POST /interview/questions
-- POST /interview/mock/start
-- POST /interview/mock/respond
-- GET /interview/mock/session/{session_id}
-- GET /interview/mock/sessions
-
-Feedback and progress:
-- POST /interview/feedback/{session_id}
-- GET /interview/feedback/{session_id}
-- POST /interview/evaluate-answer
-- GET /interview/progress
-- POST /interview/init-db
-
-## Data and Storage
-
-PostgreSQL tables (created by migrate.py and startup initializers):
-
-- users
-- chat_history
-- summarized_memory
-- emotion_log
-- emotion_alerts
-- interview-related tables from services/interview.py initializer
-
-Pinecone:
-- stores embedded document chunks with metadata user_id/doc_id/chunk/filename
-
-Neo4j:
-- nodes: Entity, Document, Message
-- relationships for mentions and extracted relations
-- constraints/indexes auto-created by Neo4jLoader
-
-## Agent Orchestration
-
-Graph nodes:
-- router
-- reasoning
-- research
-- tools
-- memory
-- interview
-
-State includes:
-- messages
-- next
-- user_id
-- iterations
-- agent_used
-- emotion_context
-
-Router behavior:
-- deterministic keyword fast paths for low latency
-- routes to specific agent
-- worker response usually finishes in one pass
-
-## Performance and Latency Notes
-
-Latency optimizations already in code:
-
-- blocking work moved to threadpool in chat route
-- background tasks for persistence operations
-- deterministic router paths to reduce unnecessary model calls
-- configurable fast default model via MISTRAL_MODEL
-- parallel retrieval/KG calls in research and memory paths
-- timeout protection on optional context fetches
-- thread-local PostgreSQL connection handling
-
-If response is still slow, verify:
-
-1. Backend restarted after code changes
-2. MISTRAL_MODEL is set to a fast model
-3. Pinecone index is reachable and healthy
-4. Neo4j is reachable (if KG enabled)
-5. DATABASE_URL network latency is reasonable
-
-## Development Workflow
-
-Typical workflow:
-
-1. Start backend and frontend
-2. Create account and login
-3. Test chat, upload, and interview routes from UI
-4. Validate backend with /docs
-5. Run focused tests from ai-engine/tests
-
-Formatting and linting:
-- Frontend: npm run lint
-- Backend: use your preferred formatter/linter (not enforced in this repo root)
+---
 
 ## Testing
 
@@ -420,12 +221,23 @@ cd ai-engine
 python tests\test_rag.py
 ```
 
+---
+
 ## Troubleshooting
 
-### 1) Auth fails
+Auth fails:
+
 - Confirm DATABASE_URL is correct
 - Run migrate.py
 - Ensure users table exists
+
+---
+
+## Notes
+
+- KG routes require Neo4j env vars
+- If responses feel slow, use a faster Mistral model
+- MCP servers can be swapped or extended for new tools
 
 ### 2) /chat returns slowly
 - Check MISTRAL_MODEL
