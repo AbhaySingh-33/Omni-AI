@@ -9,6 +9,7 @@ This agent handles:
 """
 
 from app.gemini import llm
+from app.llm_utils import call_with_retry
 from langchain_core.messages import AIMessage
 import json
 import re
@@ -97,7 +98,7 @@ Instructions:
 
 Generate the resume or ask for needed information:"""
 
-    result = llm.invoke(prompt)
+    result = call_with_retry(llm.invoke, prompt)
     return result.content
 
 
@@ -132,7 +133,7 @@ Provide analysis in these categories:
 
 Be specific and constructive. Help the user create a winning resume."""
 
-    result = llm.invoke(prompt)
+    result = call_with_retry(llm.invoke, prompt)
     return result.content
 
 
@@ -171,7 +172,7 @@ For each question, provide:
 
 Make questions specific to the role/industry mentioned."""
 
-    result = llm.invoke(prompt)
+    result = call_with_retry(llm.invoke, prompt)
     return result.content
 
 
@@ -218,7 +219,7 @@ The candidate just responded. As the interviewer:
 
 Be professional, realistic, and helpful. Simulate a real interview experience."""
 
-    result = llm.invoke(prompt)
+    result = call_with_retry(llm.invoke, prompt)
     return result.content
 
 
@@ -268,7 +269,7 @@ For each major answer, provide:
 
 Be constructive, specific, and encouraging. Help the candidate improve."""
 
-    result = llm.invoke(prompt)
+    result = call_with_retry(llm.invoke, prompt)
     return result.content
 
 
@@ -295,7 +296,7 @@ Be encouraging and practical. If the question is vague, offer to help with:
 
 Guide them toward the most helpful next step."""
 
-    result = llm.invoke(prompt)
+    result = call_with_retry(llm.invoke, prompt)
     return result.content
 
 

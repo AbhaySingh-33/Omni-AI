@@ -1,5 +1,6 @@
 from datetime import datetime
 from app.gemini import llm
+from app.llm_utils import call_with_retry
 
 
 def format_response(user_query: str, raw: str) -> str:
@@ -25,5 +26,5 @@ Raw data:
 {raw}
 
 Now write a clean, structured response:"""
-    result = llm.invoke(prompt)
+    result = call_with_retry(llm.invoke, prompt)
     return result.content

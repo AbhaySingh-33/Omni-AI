@@ -145,3 +145,50 @@ wimpy,fear,0.85
 withdrawing from people,sadness,0.8
 work feels pointless,hopelessness,0.8
 wronged,anger,0.85
+udas,sadness,0.8
+udaas,sadness,0.8
+bahut udas,sadness,0.9
+dukhi,sadness,0.8
+dil tut gaya,sadness,0.9
+rota hu,sadness,0.8
+ro rahi hu,sadness,0.8
+tanha,sadness,0.8
+akela,sadness,0.8
+akeli,sadness,0.8
+ghabrahat,anxiety,0.8
+chinta,anxiety,0.75
+fikar,anxiety,0.7
+bechain,anxiety,0.75
+pareshan,anxiety,0.75
+pareshaan,anxiety,0.75
+dar,fear,0.75
+darr,fear,0.75
+khauf,fear,0.75
+gussa,anger,0.8
+naraz,anger,0.75
+gusse me,anger,0.8
+irritate,anger,0.7
+thak gaya,stress,0.75
+thak gayi,stress,0.75
+bahut thak gaya,stress,0.85
+bahut thak gayi,stress,0.85
+tension,stress,0.75
+bohot pressure,stress,0.8
+pressure bahut hai,stress,0.8
+stress ho raha hai,stress,0.8
+tensed,anxiety,0.75
+very tensed,anxiety,0.85
+tensed about,anxiety,0.8
+feeling tensed,anxiety,0.8
+placement tension,stress,0.85
+gd round tension,stress,0.85
+khush,joy,0.8
+khushi,joy,0.8
+bahut khush,joy,0.9
+maza aa raha hai,joy,0.85
+achha lag raha hai,joy,0.8
+umeed nahi,hopelessness,0.85
+umeed khatam,hopelessness,0.9
+himmat haar raha,hopelessness,0.85
+himmat haar rahi,hopelessness,0.85
+zindagi bekaar,hopelessness,0.9

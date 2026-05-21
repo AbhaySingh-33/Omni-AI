@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, BackgroundTasks
+from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 from typing import Optional
@@ -13,6 +13,7 @@ from services.memory import save_chat
 from services.tts import synthesize_speech
 from services.kg import ingest_user_message
 from emotion import detect_emotion, assess_risk
+from app.llm_utils import is_rate_limit_error
 
 router = APIRouter()
 
@@ -43,7 +44,7 @@ def _save_emotion_safe(
 ) -> None:
     """Persist emotion data asynchronously — never blocks the response."""
     try:
-        from emotion.emotion_store import save_emotion
+        from emotion import save_emotion
         save_emotion(
             user_id=user_id,
             emotion=emotion_result.emotion,
@@ -82,7 +83,7 @@ async def chat(req: ChatRequest, background_tasks: BackgroundTasks, user=Depends
     except Exception as exc:
         print(f"Risk assessment fallback: {exc}")
         # Fallback: create a minimal risk assessment
-        from emotion.risk_engine import RiskAssessment
+        from emotion import RiskAssessment
         risk_assessment = RiskAssessment(
             risk_level="low", trend="stable", escalation_score=0.0,
             consecutive_negative=0, recommended_tone="supportive",
@@ -101,17 +102,33 @@ async def chat(req: ChatRequest, background_tasks: BackgroundTasks, user=Depends
             "is_crisis": emotion_result.is_crisis,
         }
 
-    result = await run_in_threadpool(
-        graph.invoke,
-        {
-            "messages": [("user", checked_input)],
-            "user_id": user_id,
-            "iterations": 0,
-            "emotion_context": emotion_context,
-        },
-    )
+    try:
+        result = await run_in_threadpool(
+            graph.invoke,
+            {
+                "messages": [("user", checked_input)],
+                "user_id": user_id,
+                "iterations": 0,
+                "emotion_context": emotion_context,
+            },
+        )
+    except Exception as exc:
+        if is_rate_limit_error(exc):
+            raise HTTPException(
+                status_code=429,
+                detail="Model rate limit hit. Please retry in a few seconds or switch models.",
+            )
+        raise
     raw_response = result["messages"][-1].content
-    final_response = format_response(req.message, raw_response)
+    try:
+        final_response = format_response(req.message, raw_response)
+    except Exception as exc:
+        if is_rate_limit_error(exc):
+            raise HTTPException(
+                status_code=429,
+                detail="Model rate limit hit while formatting. Please retry in a few seconds or switch models.",
+            )
+        raise
     safe_response = validate_output(final_response)
 
     agent_used = result.get("agent_used") or result.get("next", "reasoning")
@@ -161,7 +178,15 @@ def get_history(session_id: str, user=Depends(get_current_user)):
     messages = []
     for msg, resp in rows:
         messages.append({"role": "user", "content": msg})
-        messages.append({"role": "assistant", "content": resp})
+        emotion_result = detect_emotion(msg)
+        assistant_payload = {"role": "assistant", "content": resp}
+        if emotion_result.emotion != "neutral":
+            assistant_payload["emotion"] = {
+                "detected": emotion_result.emotion,
+                "intensity": emotion_result.intensity,
+                "risk_level": "low",
+            }
+        messages.append(assistant_payload)
     return {"messages": messages}
 
 @router.delete("/history/{session_id}")

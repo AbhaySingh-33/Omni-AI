@@ -1,4 +1,6 @@
 from app.dspy_module import QAModule, qa, qa_context
+from app.gemini import llm
+from app.llm_utils import call_with_retry, is_rate_limit_error
 
 def reasoning_agent(state):
     messages = state["messages"]
@@ -25,9 +27,30 @@ def reasoning_agent(state):
         except Exception:
             emotion_prefix = ""
 
+    def _fallback_response(query: str, context_text: str = "") -> str:
+        prompt = f"""You are a helpful AI assistant.
+Answer the user's question clearly and concisely.
+
+Context:
+{context_text or "(none)"}
+
+Question:
+{query}
+"""
+        result = call_with_retry(llm.invoke, prompt)
+        content = result.content
+        if isinstance(content, list):
+            content = "".join([item.get("text", "") for item in content if isinstance(item, dict)])
+        return content
+
     if len(messages) <= 1 and not emotion_prefix:
-        result = qa(question=current_query)
-        return {"messages": [("assistant", result.answer)], "agent_used": "reasoning"}
+        try:
+            result = call_with_retry(qa, question=current_query)
+            return {"messages": [("assistant", result.answer)], "agent_used": "reasoning"}
+        except Exception as exc:
+            if not is_rate_limit_error(exc):
+                raise
+            return {"messages": [("assistant", _fallback_response(current_query))], "agent_used": "reasoning"}
 
     # Build context from conversation history + emotion awareness
     context_parts = []
@@ -41,10 +64,18 @@ def reasoning_agent(state):
     # If we only have emotion context and no conversation context, still use context-aware module
     context = "\n\n".join(context_parts) if context_parts else ""
     
-    if context:
-        result = qa_context(question=current_query, context=context)
-    else:
-        result = qa(question=current_query)
+    try:
+        if context:
+            result = call_with_retry(qa_context, question=current_query, context=context)
+        else:
+            result = call_with_retry(qa, question=current_query)
+    except Exception as exc:
+        if not is_rate_limit_error(exc):
+            raise
+        return {
+            "messages": [("assistant", _fallback_response(current_query, context))],
+            "agent_used": "reasoning",
+        }
 
     return {
         "messages": [("assistant", result.answer)],

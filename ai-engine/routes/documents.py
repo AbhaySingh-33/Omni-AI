@@ -61,6 +61,14 @@ def delete_document(doc_id: str, user=Depends(get_current_user)):
     for i in range(0, len(ids), 100):
         index.delete(ids=ids[i:i + 100])
 
+    # Clean up BM25 keyword-search store
+    try:
+        from services.bm25_store import delete_chunks as delete_bm25_chunks
+        deleted_bm25 = delete_bm25_chunks(doc_id, user["user_id"])
+        print(f"BM25 store: deleted {deleted_bm25} chunks for doc {doc_id}")
+    except Exception as exc:
+        print(f"BM25 delete skipped: {exc}")
+
     try:
         from services.kg import delete_kg_for_document
         delete_kg_for_document(doc_id, user["user_id"])
@@ -69,7 +77,7 @@ def delete_document(doc_id: str, user=Depends(get_current_user)):
 
     # Also clean legal vectorless KG for the same doc_id if present.
     try:
-        from legal_rag.neo4j_store import LegalGraphStore
+        from legal_rag import LegalGraphStore
         LegalGraphStore().delete_document(user["user_id"], doc_id)
     except Exception as exc:
         print(f"Legal KG delete skipped: {exc}")

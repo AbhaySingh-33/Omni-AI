@@ -13,6 +13,7 @@ Public API:
 from emotion.classifier import detect_emotion, EmotionResult
 from emotion.risk_engine import assess_risk, RiskAssessment
 from emotion.prompts import get_emotion_prompt
+from emotion.emotion_store import save_emotion
 
 __all__ = [
     "detect_emotion",
@@ -20,4 +21,5 @@ __all__ = [
     "assess_risk",
     "RiskAssessment",
     "get_emotion_prompt",
+    "save_emotion",
 ]

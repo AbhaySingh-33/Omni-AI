@@ -3,6 +3,7 @@ import re
 import asyncio
 import nest_asyncio
 from app.gemini import llm
+from app.llm_utils import call_with_retry
 from app.mcp_client import call_mcp_tool
 from app.guardrails.tool_guard import validate_tool
 
@@ -61,7 +62,7 @@ For write_file also include: {{"tool": "write_file", "input": "filename", "conte
 
 Query: {safe_query}"""
 
-    result = llm.invoke(prompt)
+    result = call_with_retry(llm.invoke, prompt)
     content = result.content
 
     if isinstance(content, list):

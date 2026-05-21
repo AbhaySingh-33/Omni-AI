@@ -5,10 +5,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 MISTRAL_MODEL = os.getenv("MISTRAL_MODEL", "mistral-small-latest")
+DSPY_MODEL = os.getenv("DSPY_MODEL", f"mistral/{MISTRAL_MODEL}")
 
 # DSPy natively supports Mistral via LiteLLM — no custom wrapper needed
 mistral_lm = dspy.LM(
-    model=f"mistral/{MISTRAL_MODEL}",
+    model=DSPY_MODEL,
     api_key=os.getenv("MISTRAL_API_KEY"),
     temperature=0.3,
 )

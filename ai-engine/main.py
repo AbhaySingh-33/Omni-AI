@@ -56,3 +56,10 @@ async def startup_event():
     except Exception as e:
         print(f"Warning: Could not initialize emotion tables: {e}")
 
+    try:
+        from migrations.create_document_chunks import init_document_chunks_table
+        init_document_chunks_table()
+        print("BM25 document_chunks table initialized")
+    except Exception as e:
+        print(f"Warning: Could not initialize document_chunks table: {e}")
+

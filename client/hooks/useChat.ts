@@ -73,9 +73,10 @@ export function useChat(token: string | null) {
       if (!res.ok) return;
       const data = await res.json();
       const loaded: Message[] = (data.messages ?? []).map(
-        (m: { role: "user" | "assistant"; content: string; agent?: string }, i: number) => ({ 
+        (m: { role: "user" | "assistant"; content: string; agent?: string; emotion?: Message["emotion"] }, i: number) => ({ 
           id: `history-${i}`, role: m.role, content: m.content,
-          timestamp: new Date().toISOString(), agent: normalizeAgent(m.agent), fromHistory: true 
+          timestamp: new Date().toISOString(), agent: normalizeAgent(m.agent),
+          emotion: m.emotion || undefined, fromHistory: true 
         })
       );
       dispatch(setMessages(loaded));

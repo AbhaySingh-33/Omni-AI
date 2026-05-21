@@ -1,3 +1,10 @@
+"""PDF / text ingestion pipeline with dual indexing.
+
+Stores chunks in:
+  1. Pinecone  — vector embeddings for semantic search
+  2. PostgreSQL — raw text for BM25 keyword search
+"""
+
 from app.pinecone_client import index
 from app.embeddings import embeddings
 from pypdf import PdfReader
@@ -7,11 +14,13 @@ import hashlib
 
 from services.text_chunker import chunk_text
 from services.kg import ingest_document_text
+from services.bm25_store import store_chunks as bm25_store_chunks
 
 
 def store_text(text, doc_id, filename="unknown", user_id="default_user"):
     chunks = chunk_text(text)
-    
+
+    # --- 1. Vector index (Pinecone) ---
     # Batch embed all chunks at once - much faster!
     print(f"Embedding {len(chunks)} chunks for doc {doc_id}...")
     try:
@@ -32,6 +41,12 @@ def store_text(text, doc_id, filename="unknown", user_id="default_user"):
     # Upsert in batches of 100 (Pinecone limit)
     for i in range(0, len(vectors), 100):
         index.upsert(vectors[i:i + 100])
+
+    # --- 2. BM25 text store (PostgreSQL) ---
+    try:
+        bm25_store_chunks(chunks, doc_id, filename, user_id)
+    except Exception as exc:
+        print(f"BM25 store failed (non-fatal): {exc}")
 
     print(f"Stored {len(chunks)} chunks for doc: {doc_id}")
     return doc_id

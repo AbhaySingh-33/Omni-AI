@@ -1,5 +1,6 @@
 from services.memory import get_history, get_summary
 from app.gemini import llm
+from app.llm_utils import call_with_retry
 import concurrent.futures
 
 def memory_agent(state):
@@ -26,7 +27,7 @@ Use the information below to answer the user's question accurately.
 
 Answer based on what you know about this user from the memory above:"""
 
-    result = llm.invoke(prompt)
+    result = call_with_retry(llm.invoke, prompt)
     content = result.content
 
     if isinstance(content, list):
