@@ -30,6 +30,7 @@ async def upload_pdf(file: UploadFile = File(...), user=Depends(get_current_user
 @router.get("/documents")
 def list_documents(user=Depends(get_current_user)):
     from app.pinecone_client import index
+    # Dimension is required for the query vector; use unfiltered stats for that.
     stats = index.describe_index_stats()
     results = index.query(
         vector=[0.0] * int(stats.get("dimension", 1024)),
@@ -45,7 +46,8 @@ def list_documents(user=Depends(get_current_user)):
             seen[doc_id] = {"doc_id": doc_id, "filename": meta.get("filename", doc_id[:8] + "..."), "chunks": 0}
         if doc_id:
             seen[doc_id]["chunks"] += 1
-    return {"documents": list(seen.values()), "total_chunks": stats.get("total_vector_count", 0)}
+    total_chunks = sum(doc["chunks"] for doc in seen.values())
+    return {"documents": list(seen.values()), "total_chunks": total_chunks}
 
 
 @router.delete("/documents/{doc_id}")

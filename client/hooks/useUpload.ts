@@ -1,11 +1,14 @@
 "use client";
 import { useState, useCallback } from "react";
+import { useAppDispatch } from "@/store/hooks";
+import { forceLogout } from "@/store/authUtils";
 
 const AI_ENGINE_URL = process.env.NEXT_PUBLIC_AI_ENGINE_URL || "http://localhost:8000";
 
 export type UploadStatus = "idle" | "uploading" | "success" | "error";
 
 export function useUpload(token: string | null, onSuccess?: () => void) {
+  const dispatch = useAppDispatch();
   const [status, setStatus] = useState<UploadStatus>("idle");
   const [fileName, setFileName] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -24,6 +27,10 @@ export function useUpload(token: string | null, onSuccess?: () => void) {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         body: form,
       });
+      if (res.status === 401) {
+        forceLogout(dispatch);
+        throw new Error("Session expired. Please login again.");
+      }
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Upload failed");
       setStatus("success");
@@ -39,7 +46,7 @@ export function useUpload(token: string | null, onSuccess?: () => void) {
       setFileName(null);
       setMessage(null);
     }, 4000);
-  }, [token, onSuccess]);
+  }, [token, onSuccess, dispatch]);
 
   return { status, fileName, message, uploadPdf };
 }

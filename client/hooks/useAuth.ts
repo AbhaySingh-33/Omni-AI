@@ -2,10 +2,10 @@
 import { useCallback, useEffect } from "react";
 import { AuthUser } from "@/lib/types";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setUser, setLoading, setError, logout as logoutAction } from "@/store/slices/authSlice";
+import { setUser, setLoading, setError } from "@/store/slices/authSlice";
+import { TOKEN_KEY, forceLogout } from "@/store/authUtils";
 
 const AI_ENGINE_URL = process.env.NEXT_PUBLIC_AI_ENGINE_URL || "http://localhost:8000";
-const TOKEN_KEY = "omni_token";
 
 export function useAuth() {
   const dispatch = useAppDispatch();
@@ -56,8 +56,7 @@ export function useAuth() {
     }).catch(() => {
       // ignore logout transport errors; local sign-out still proceeds
     });
-    localStorage.removeItem(TOKEN_KEY);
-    dispatch(logoutAction());
+    forceLogout(dispatch);
   }, [dispatch]);
 
   return { user, loading, error, login, register, logout };

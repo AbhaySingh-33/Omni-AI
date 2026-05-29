@@ -2,6 +2,7 @@
 import { useCallback, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setKgData, setKgLoading, setKgError } from "@/store/slices/kgSlice";
+import { forceLogout } from "@/store/authUtils";
 
 const AI_ENGINE_URL = process.env.NEXT_PUBLIC_AI_ENGINE_URL || "http://localhost:8000";
 
@@ -65,6 +66,10 @@ export function useKnowledgeGraph(token: string | null) {
       const docsRes = await fetch(`${AI_ENGINE_URL}/documents`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (docsRes.status === 401) {
+        forceLogout(dispatch);
+        return;
+      }
       if (docsRes.ok) {
         const docsJson = await docsRes.json();
         const docs = docsJson?.documents ?? [];
@@ -82,6 +87,10 @@ export function useKnowledgeGraph(token: string | null) {
       const res = await fetch(`${AI_ENGINE_URL}/kg/inspect?${search.toString()}`, {
         headers: authHeaders,
       });
+      if (res.status === 401) {
+        forceLogout(dispatch);
+        return;
+      }
       if (!res.ok) throw new Error(`KG fetch failed: ${res.status}`);
       const json = (await res.json()) as KGResponse;
       dispatch(setKgData(json));

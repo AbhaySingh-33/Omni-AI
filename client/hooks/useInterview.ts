@@ -1,5 +1,7 @@
 "use client";
 import { useState, useCallback, useEffect } from "react";
+import { useAppDispatch } from "@/store/hooks";
+import { forceLogout } from "@/store/authUtils";
 import {
   Resume,
   InterviewSession,
@@ -12,7 +14,16 @@ const AI_ENGINE_URL = process.env.NEXT_PUBLIC_AI_ENGINE_URL || "http://localhost
 
 // ============= RESUME HOOK =============
 export function useResume(token: string | null) {
+  const dispatch = useAppDispatch();
   const [resume, setResume] = useState<Resume | null>(null);
+    const handleUnauthorized = (res: Response) => {
+      if (res.status === 401) {
+        forceLogout(dispatch);
+        return true;
+      }
+      return false;
+    };
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,6 +37,7 @@ export function useResume(token: string | null) {
     setLoading(true);
     try {
       const res = await fetch(`${AI_ENGINE_URL}/interview/resume`, { headers });
+      if (handleUnauthorized(res)) return;
       const data = await res.json();
       setResume(data.resume);
     } catch (err) {
@@ -44,6 +56,7 @@ export function useResume(token: string | null) {
         headers,
         body: JSON.stringify({ content, job_title: jobTitle }),
       });
+      if (handleUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) {
         await fetchResume();
@@ -75,6 +88,7 @@ export function useResume(token: string | null) {
         headers,
         body: JSON.stringify(formData),
       });
+      if (handleUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) {
         await fetchResume();
@@ -96,6 +110,7 @@ export function useResume(token: string | null) {
         headers,
         body: JSON.stringify({ content, job_title: jobTitle }),
       });
+      if (handleUnauthorized(res)) return;
       return await res.json();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to analyze resume");
@@ -113,7 +128,16 @@ export function useResume(token: string | null) {
 
 // ============= QUESTIONS HOOK =============
 export function useInterviewQuestions(token: string | null) {
+  const dispatch = useAppDispatch();
   const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
+    const handleUnauthorized = (res: Response) => {
+      if (res.status === 401) {
+        forceLogout(dispatch);
+        return true;
+      }
+      return false;
+    };
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -138,6 +162,7 @@ export function useInterviewQuestions(token: string | null) {
         headers,
         body: JSON.stringify(params),
       });
+      if (handleUnauthorized(res)) return;
       const data = await res.json();
       if (data.success && data.data?.questions) {
         setQuestions(data.data.questions);
@@ -157,7 +182,16 @@ export function useInterviewQuestions(token: string | null) {
 
 // ============= MOCK INTERVIEW HOOK =============
 export function useMockInterview(token: string | null) {
+  const dispatch = useAppDispatch();
   const [session, setSession] = useState<InterviewSession | null>(null);
+    const handleUnauthorized = (res: Response) => {
+      if (res.status === 401) {
+        forceLogout(dispatch);
+        return true;
+      }
+      return false;
+    };
+
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -182,6 +216,7 @@ export function useMockInterview(token: string | null) {
         headers,
         body: JSON.stringify(params),
       });
+      if (handleUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) {
         setSession({ id: data.session_id, job_title: params.job_title, company: params.company, interview_type: params.interview_type || "general", status: "in_progress", created_at: new Date().toISOString() });
@@ -209,6 +244,7 @@ export function useMockInterview(token: string | null) {
           job_title: session.job_title,
         }),
       });
+      if (handleUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) {
         setMessages((prev) => [...prev, { role: "interviewer", content: data.message }]);
@@ -234,7 +270,16 @@ export function useMockInterview(token: string | null) {
 
 // ============= FEEDBACK HOOK =============
 export function useInterviewFeedback(token: string | null) {
+  const dispatch = useAppDispatch();
   const [feedback, setFeedback] = useState<InterviewFeedback | null>(null);
+    const handleUnauthorized = (res: Response) => {
+      if (res.status === 401) {
+        forceLogout(dispatch);
+        return true;
+      }
+      return false;
+    };
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -252,6 +297,7 @@ export function useInterviewFeedback(token: string | null) {
         method: "POST",
         headers,
       });
+      if (handleUnauthorized(res)) return;
       const data = await res.json();
       if (data.success) {
         setFeedback(data.feedback);
@@ -273,6 +319,7 @@ export function useInterviewFeedback(token: string | null) {
         headers,
         body: JSON.stringify({ question, answer, job_title: jobTitle }),
       });
+      if (handleUnauthorized(res)) return;
       return await res.json();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to evaluate answer");
@@ -286,7 +333,16 @@ export function useInterviewFeedback(token: string | null) {
 
 // ============= PROGRESS HOOK =============
 export function useInterviewProgress(token: string | null) {
+  const dispatch = useAppDispatch();
   const [progress, setProgress] = useState<UserProgress | null>(null);
+    const handleUnauthorized = (res: Response) => {
+      if (res.status === 401) {
+        forceLogout(dispatch);
+        return true;
+      }
+      return false;
+    };
+
   const [sessions, setSessions] = useState<InterviewSession[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -303,6 +359,7 @@ export function useInterviewProgress(token: string | null) {
         fetch(`${AI_ENGINE_URL}/interview/progress`, { headers }),
         fetch(`${AI_ENGINE_URL}/interview/mock/sessions`, { headers }),
       ]);
+      if (handleUnauthorized(progressRes) || handleUnauthorized(sessionsRes)) return;
       const progressData = await progressRes.json();
       const sessionsData = await sessionsRes.json();
       if (progressData.success) setProgress(progressData.progress);

@@ -1,5 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { useAppDispatch } from "@/store/hooks";
+import { forceLogout } from "@/store/authUtils";
 
 const AI_ENGINE_URL = process.env.NEXT_PUBLIC_AI_ENGINE_URL || "http://localhost:8000";
 
@@ -43,6 +45,7 @@ export interface EmotionAnalytics {
 }
 
 export function useEmotion(token: string | null) {
+  const dispatch = useAppDispatch();
   const [analytics, setAnalytics] = useState<EmotionAnalytics | null>(null);
   const [loading, setLoading] = useState(true); // default to true
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +62,10 @@ export function useEmotion(token: string | null) {
         credentials: "include",
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (res.status === 401) {
+        forceLogout(dispatch);
+        return;
+      }
       if (!res.ok) throw new Error(`Error: ${res.status}`);
       const data: EmotionAnalytics = await res.json();
       setAnalytics(data);
@@ -72,17 +79,21 @@ export function useEmotion(token: string | null) {
   const acknowledgeAlert = useCallback(async (alertId: number) => {
     if (!token) return;
     try {
-      await fetch(`${AI_ENGINE_URL}/emotion/alerts/${alertId}/acknowledge`, {
+      const res = await fetch(`${AI_ENGINE_URL}/emotion/alerts/${alertId}/acknowledge`, {
         method: "POST",
         credentials: "include",
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (res.status === 401) {
+        forceLogout(dispatch);
+        return;
+      }
       // Refresh analytics after acknowledging
       fetchAnalytics();
     } catch {
       // silently fail
     }
-  }, [token, fetchAnalytics]);
+  }, [token, fetchAnalytics, dispatch]);
 
   useEffect(() => {
     fetchAnalytics();

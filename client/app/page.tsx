@@ -28,7 +28,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-screen bg-[#0a0a0a] text-white overflow-hidden">
+    <div className="flex h-screen bg-animated text-white overflow-hidden">
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -43,7 +43,7 @@ export default function Home() {
       />
 
       <div className="flex flex-col flex-1 min-w-0">
-        <header className="flex items-center gap-3 px-4 py-4 border-b border-white/5 bg-[#0a0a0a] flex-shrink-0">
+        <header className="flex items-center gap-3 px-4 py-4 border-b border-white/5 flex-shrink-0" style={{background: 'rgba(8,8,16,0.9)', backdropFilter: 'blur(12px)'}}>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -96,7 +96,7 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="flex flex-col flex-1 min-h-0 max-w-3xl w-full mx-auto">
+        <div className="flex flex-col flex-1 min-h-0 max-w-3xl w-full mx-auto relative">
           <ChatWindow messages={messages} loading={loading} historyLoading={historyLoading} />
           <ChatInput
             onSend={sendMessage}

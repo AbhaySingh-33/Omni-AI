@@ -2,6 +2,7 @@
 import { useCallback, useEffect } from "react";
 import { Message } from "@/lib/types";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { forceLogout } from "@/store/authUtils";
 import { 
   setMessages, addMessage, setChatLoading, setHistoryLoading, 
   setChatError, clearMessages as clearMessagesAction,
@@ -36,6 +37,9 @@ function normalizeAgent(raw: unknown): Message["agent"] | undefined {
 
 export function useChat(token: string | null) {
   const dispatch = useAppDispatch();
+    const handleUnauthorized = useCallback(() => {
+      forceLogout(dispatch);
+    }, [dispatch]);
   const chatState = useAppSelector((state) => state.chat);
   const messages = chatState?.messages ?? [];
   const sessions = chatState?.sessions ?? [];
@@ -53,6 +57,10 @@ export function useChat(token: string | null) {
     if (!token) return;
     try {
       const res = await fetch(`${AI_ENGINE_URL}/history/sessions`, { headers: authHeaders, credentials: "include" });
+      if (res.status === 401) {
+        handleUnauthorized();
+        return [];
+      }
       if (res.ok) {
         const data = await res.json();
         dispatch(setSessions(data.sessions || []));
@@ -62,7 +70,7 @@ export function useChat(token: string | null) {
       // silently fail
     }
     return [];
-  }, [token, dispatch]);
+  }, [token, dispatch, handleUnauthorized]);
 
   const loadSession = useCallback(async (sessionId: string) => {
     if (!token) return;
@@ -70,6 +78,10 @@ export function useChat(token: string | null) {
     dispatch(setActiveSessionId(sessionId));
     try {
       const res = await fetch(`${AI_ENGINE_URL}/history/${sessionId}`, { headers: authHeaders, credentials: "include" });
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
       if (!res.ok) return;
       const data = await res.json();
       const loaded: Message[] = (data.messages ?? []).map(
@@ -84,7 +96,7 @@ export function useChat(token: string | null) {
     } finally {
       dispatch(setHistoryLoading(false));
     }
-  }, [token, dispatch]);
+  }, [token, dispatch, handleUnauthorized]);
 
   const startNewChat = useCallback(() => {
     const newId = crypto.randomUUID();
@@ -131,6 +143,10 @@ export function useChat(token: string | null) {
         headers: authHeaders,
         body: JSON.stringify({ message: content, session_id: currentSessionId }),
       });
+      if (res.status === 401) {
+        handleUnauthorized();
+        throw new Error("Server error: 401");
+      }
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       const data = await res.json();
       dispatch(addMessage({
@@ -146,7 +162,7 @@ export function useChat(token: string | null) {
     } finally {
       dispatch(setChatLoading(false));
     }
-  }, [token, dispatch, activeSessionId, fetchSessions]);
+  }, [token, dispatch, activeSessionId, fetchSessions, handleUnauthorized]);
 
   const deleteChatHistory = useCallback(async (sessionId: string) => {
     if (!token) return;
@@ -156,6 +172,10 @@ export function useChat(token: string | null) {
         credentials: "include",
         headers: authHeaders,
       });
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
       if (!res.ok) throw new Error("Failed to delete history on server.");
       await fetchSessions();
       if (activeSessionId === sessionId) {
@@ -164,7 +184,7 @@ export function useChat(token: string | null) {
     } catch (err) {
       console.error(err);
     }
-  }, [token, dispatch, activeSessionId, fetchSessions, startNewChat]);
+  }, [token, dispatch, activeSessionId, fetchSessions, startNewChat, handleUnauthorized]);
 
   return { 
     messages, sessions, activeSessionId, loading, historyLoading, error, 
