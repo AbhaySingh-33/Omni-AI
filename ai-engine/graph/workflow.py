@@ -15,6 +15,7 @@ class State(TypedDict):
     messages: Annotated[list, add_messages]
     next: str
     user_id: str
+    session_id: Optional[str]
     iterations: Annotated[int, operator.add]
     agent_used: str
     emotion_context: Optional[dict]

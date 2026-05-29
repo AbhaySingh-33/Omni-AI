@@ -47,6 +47,7 @@ GREETING_KEYWORDS = [
 MEMORY_KEYWORDS = [
     "remember", "earlier", "previous", "before", "last time", "history",
     "what did i say", "what did we talk", "from our conversation",
+    "my name", "what's my name", "what is my name", "who am i",
 ]
 
 # Keywords that usually indicate tool action requests.
@@ -85,7 +86,11 @@ def router_agent(state):
         if emotion_ctx and emotion_ctx.get("is_crisis"):
             return {"next": "reasoning", "iterations": 1}
 
-        # Fast-path: emotional/mental health content → reasoning (emotion prompts activate)
+        # Fast-path: memory
+        if any(kw in last_content for kw in MEMORY_KEYWORDS):
+            return {"next": "memory", "iterations": 1}
+
+        # Fast-path: emotional/mental health content -> reasoning (emotion prompts activate)
         if any(kw in last_content for kw in EMOTION_KEYWORDS):
             return {"next": "reasoning", "iterations": 1}
 
@@ -104,10 +109,6 @@ def router_agent(state):
         # Fast-path: simple greetings -> reasoning
         if last_content in GREETING_KEYWORDS:
             return {"next": "reasoning", "iterations": 1}
-
-        # Fast-path: memory
-        if any(kw in last_content for kw in MEMORY_KEYWORDS):
-            return {"next": "memory", "iterations": 1}
 
         # Fast-path: tool requests
         if any(kw in last_content for kw in TOOLS_KEYWORDS):

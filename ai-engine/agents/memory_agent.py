@@ -7,10 +7,11 @@ def memory_agent(state):
     messages = state["messages"]
     query = messages[-1].content
     user_id = state.get("user_id", "default_user")
+    session_id = state.get("session_id")
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
         summary_future = executor.submit(get_summary, user_id)
-        history_future = executor.submit(get_history, user_id)
+        history_future = executor.submit(get_history, user_id, session_id, 50)
         summary = summary_future.result()
         history = history_future.result()
 

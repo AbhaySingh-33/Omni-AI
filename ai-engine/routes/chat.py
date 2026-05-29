@@ -108,6 +108,7 @@ async def chat(req: ChatRequest, background_tasks: BackgroundTasks, user=Depends
             {
                 "messages": [("user", checked_input)],
                 "user_id": user_id,
+                "session_id": req.session_id,
                 "iterations": 0,
                 "emotion_context": emotion_context,
             },
